@@ -1,113 +1,147 @@
-Downloader HLS/DASH (Flask)
-Mini-app Flask para baixar conteúdo HLS/DASH sem DRM a partir de um JSON de preparo do player. Suporta seleção de áudio/legendas por idioma, força de AAC, escolha de contêiner (mp4/mkv) e auto-nome com padrão de séries.
+# Downloader HLS/DASH (Flask)
 
-Requisitos
-Python 3.9+
+Pequena aplicação Flask para baixar conteúdos **HLS/DASH sem DRM** a partir do **JSON** de uma API (ex.: `manifest_uri`, `cdns.base_uri`). Inclui seleção de áudio/legendas, nome automático de arquivo, e UI com spinner.
 
-ffmpeg instalado no sistema (recomendado)
+> ⚠️ **Aviso legal**: use apenas em conteúdos **sem DRM** e para os quais você **tem permissão**. Não me responsabilizo pelo uso indevido.
 
-macOS: brew install ffmpeg
-Ubuntu/Debian: sudo apt-get update && sudo apt-get install -y ffmpeg
-Alpine: apk add --no-cache ffmpeg
-Windows: winget install Gyan.FFmpeg
+---
 
-Instalação
-bash
-Copiar
-Editar
-git clone <este-repo>
-cd <este-repo>
+## Recursos
+
+* **HLS**: usa o **master playlist** se houver grupos externos de **áudio** e/ou **legendas**; caso contrário escolhe a melhor variante por **maior bitrate**.
+* **Áudio**: baixar pista padrão, **preferir idiomas** (ex.: `por,spa,eng`) ou **todas as pistas**.
+* **Legendas**: incluir nenhuma, **preferir idiomas** ou **todas**. Em **MP4**, converte para `mov_text` para compatibilidade.
+* **Headers**: suporta `Referer`, `Origin`, `Cookie` e headers extras.
+* **Nome automático**: `Serie-t<temporada>-e-<episodio>-<titulo>.<ext>` (usa overrides do formulário + heurísticas do JSON).
+* **UI**: spinner durante o download (via iframe oculto), campos persistidos no **localStorage**.
+* **Debug**: endpoint `/health`; logs detalhados do FFmpeg com `DEBUG_FFMPEG=1`.
+
+---
+
+## Requisitos
+
+* **Python** 3.9+
+* **ffmpeg** (recomendado o do sistema):
+
+  * Ubuntu/Debian: `sudo apt-get install -y ffmpeg`
+  * macOS: `brew install ffmpeg`
+  * Alpine: `apk add --no-cache ffmpeg`
+* Alternativa: fallback via `imageio-ffmpeg` (pode ser mais instável em alguns ambientes).
+
+### Instalação
+
+```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-Execução
-bash
-Copiar
-Editar
-# opcional, aponte para o ffmpeg do sistema
-export FFMPEG_BIN=/usr/bin/ffmpeg
+```
 
-# opcional, logs detalhados do ffmpeg (gera ffmpeg-*.log)
+### Executando
+
+```bash
+# (opcional) aponte para o ffmpeg do sistema
+export FFMPEG_BIN=/usr/bin/ffmpeg
+# (opcional) logs do ffmpeg: cria ffmpeg-*.log
 export DEBUG_FFMPEG=1
 
-# opcional, NÃO escolher automaticamente a melhor variante HLS
-# (útil para debug; mantém o master como input)
-# export DISABLE_VARIANT=1
-
 python app.py
-# abra http://localhost:5000
-Como usar
-No campo JSON da API, cole o JSON que contenha response.manifest_uri, response.cdns.cdn[].base_uri, drm_type e package_type.
-Exemplo mínimo:
+# Abra http://localhost:5000
+```
 
-json
-Copiar
-Editar
-{"result":"success","response":{"drm_type":"none","package_type":"hls","manifest_uri":"minno_XXX/index.m3u8","cdns":{"cdn":[{"priority":0,"base_uri":"https://example.cdn/hls"}]}}}
-Preencha Série, Temporada, Episódio e Título (eles são usados no nome do arquivo).
+---
 
-(Opcional) Ajuste Contêiner (mp4/mkv), User-Agent, Referer/Origin, Cookie e headers extras.
+## Uso
 
-Escolha Áudio (padrão/preferir/all) e Legendas (nenhuma/preferir/all).
+1. **Cole o JSON** da API no campo “JSON da API”. Exemplo mínimo:
 
-Clique Baixar. Um spinner aparece; quando terminar, o navegador baixa o arquivo.
+   ```json
+   {
+     "result": "success",
+     "response": {
+       "drm_type": "none",
+       "package_type": "hls",
+       "manifest_uri": "minno_Aip0NbKL-rIqGBf3R/index.m3u8",
+       "cdns": {"cdn": [{"priority": 0, "base_uri": "https://.../hls-itc"}]}
+     }
+   }
+   ```
+2. Preencha **Série / Temporada / Episódio / Título**. O nome é pré-visualizado e salvo no `localStorage`.
+3. Escolha **contêiner** (`mp4` ou `mkv`).
+4. Se necessário, informe **Referer/Origin/Cookie** (copiados do DevTools do player).
+5. Selecione **Áudio** (padrão / preferir idiomas / todos) e **Legendas** (nenhuma / preferir / todas). Idiomas são códigos como `por,spa,eng`.
+6. Clique **Baixar**. Um **spinner** aparece; quando o download terminar, ele some automaticamente (via iframe oculto).
 
-Os campos de identificação ficam salvos em localStorage para agilizar o próximo uso.
+> Dica: se o arquivo vier **sem áudio**, geralmente o master tem grupo externo de áudio — manter o **master** como entrada resolve (a app já faz isso automaticamente quando detecta `#EXT-X-MEDIA:TYPE=AUDIO`).
 
-Recursos
-Auto-nome: Serie-t<temporada>-e-<episodio>-<titulo>.<ext>
-(ex.: Minha-Serie-t1-e-2-Piloto.mp4).
-Se preencher manualmente “Nome do arquivo”, esse valor é usado.
+---
 
-Áudio
+## Endpoints
 
-Padrão: pega a primeira faixa.
+* `GET /` — formulário.
+* `POST /download` — processa o JSON, baixa e devolve o arquivo como **attachment**.
+* `GET /health` — JSON com `ffmpeg` em uso e sua versão.
 
-Preferir idioma: informe por,spa,eng (ordem de preferência).
+---
 
-Todos: inclui todas as faixas de áudio.
+## Como funciona (resumo técnico)
 
-Legendas
+* Lê `response.manifest_uri`; se relativo, combina com `cdns.cdn[].base_uri` de menor `priority`.
+* Se `package_type=hls`:
 
-Nenhuma, Preferir idioma (por,spa,eng) ou Todas.
+  * Faz fetch do **master**; se contiver `#EXT-X-MEDIA:TYPE=AUDIO` ou `#EXT-X-MEDIA:TYPE=SUBTITLES` e você pediu subs, usa **master** como **input**.
+  * Caso contrário, escolhe a **melhor variante** (`#EXT-X-STREAM-INF` com maior `BANDWIDTH`).
+* Monta o comando do **ffmpeg** com `-map` conforme suas escolhas:
 
-Em MP4, as legendas são convertidas para mov_text (compatível).
+  * vídeo: `-map 0:v:0`
+  * áudio:
 
-Se o master HLS declarar #EXT-X-MEDIA:TYPE=SUBTITLES/AUDIO, a app usa o master como input (para garantir faixas externas).
+    * `default` → `-map 0:a:0?`
+    * `prefer por,spa,eng` → `-map 0:a:m:language:por? -map 0:a:m:language:spa? ...` + fallback `-map 0:a:0?`
+    * `all` → `-map 0:a?`
+  * legendas: similar a áudio (`none|prefer|all`). Em MP4 usa `-c:s mov_text`.
+* Remuxa com `-c copy` (ou re-encode de áudio para AAC caso marcado).
 
-Forçar AAC
+---
 
-Se marcado, re-encoda o áudio para AAC 160k (útil quando o MP4 não suporta o codec original).
+## Variáveis de ambiente
 
-Headers
+* `FFMPEG_BIN` — caminho do ffmpeg preferido (ex.: `/usr/bin/ffmpeg`).
+* `DEBUG_FFMPEG=1` — ativa `-loglevel debug -report` (gera `ffmpeg-*.log`).
+* `DISABLE_VARIANT=1` — desativa escolha da melhor variante (força usar master sempre que possível).
 
-Suporte a User-Agent, Referer, Origin, Cookie e headers extras (um por linha).
+---
 
-Útil para CDNs que validam origem/sessão.
+## Solução de problemas
 
-Endpoints úteis
-GET / — formulário.
+* **`ffmpeg not found`**: instale o ffmpeg e/ou ajuste `FFMPEG_BIN`.
+* **Segfault (code -11)** com `imageio-ffmpeg`: use o ffmpeg do sistema (no Alpine, `apk add ffmpeg`).
+* **Sem áudio**: use master (a app já detecta grupo de áudio). Verifique `audio_mode` e `audio_pref`.
+* **Sem legendas**: defina `subs_mode` ≠ `none`; para MP4, convertemos para `mov_text`. CEA-608/708 (CC) não aparecem como `0:s`; suporte pode exigir extração específica.
+* **403/401**: informe `Referer/Origin/Cookie` corretos. Alguns CDNs exigem `User-Agent` realista.
+* **`max_muxing_queue_size`** erro: opção deve vir **antes** do arquivo de saída (já ajustado no código).
 
-GET /health — mostra caminho e versão do ffmpeg.
+---
 
-Dicas / Depuração
-Se o download vier sem áudio, marque Forçar AAC ou selecione master automaticamente mantendo o padrão (a app já faz isso quando detecta grupos de áudio).
+## Deploy
 
-Se faltar legendas, use “Todas” ou informe idiomas em “Preferir idioma”.
-Alguns streams têm closed captions (CEA-608/708), que não aparecem como 0:s. Se precisar, peça suporte específico para CC.
+* Dev: `python app.py` (debug=True).
+* Prod (exemplo):
 
-Em falha, ative DEBUG_FFMPEG=1 e verifique o tail do log retornado + ffmpeg-*.log.
+  ```bash
+  gunicorn -w 2 -b 0.0.0.0:5000 app:app
+  ```
+* Proxy reverso (Nginx) e ajuste de **timeout** podem ser necessários para downloads longos.
 
-Segurança e uso
-Use apenas para conteúdos sem DRM e para os quais você tem permissão legal de baixar. Respeite termos de uso e direitos autorais.
+---
 
-Estrutura
-markdown
-Copiar
-Editar
-.
-├── app.py
-├── requirements.txt
-└── templates/
-    └── index.html
-Licença
-Livre para uso interno/estudos. Ajuste conforme sua necessidade.
+## Roadmap (idéias)
+
+* Presets de idioma (pt-BR / es / en).
+* Extração de **closed captions** (CEA-608/708) em HLS.
+* Suporte completo a **DASH (.mpd)** com seleção de adaptação.
+* Barra de progresso (SSE/WebSocket) ao invés de iframe.
+
+---
+
+## Licença
+
+
