@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <title>Downloader HLS/DASH (JSON)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 32px; }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    textarea, input, select { width: 100%; box-sizing: border-box; }
+    textarea { min-height: 260px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    button { padding: 12px 18px; font-weight: 600; cursor: pointer; }
+    .hint { color: #666; font-size: 12px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px; background: #fff; }
+    .mt { margin-top: 14px; }
+
+    /* Spinner overlay */
+    .overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; z-index: 9999; }
+    .spinner { width: 70px; height: 70px; border-radius: 50%; border: 8px solid #e5e7eb; border-top-color: #2563eb; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .preview { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #374151; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Baixar via JSON (HLS/DASH)</h1>
+    <form id="downloadForm" method="post" action="/download" target="dl_iframe">
+      <div class="card">
+        <label for="json_input"><strong>JSON da API</strong></label>
+        <textarea id="json_input" name="json_input" placeholder='Cole aqui o JSON completo com "response"…'>{"result":"success","response":{"drm_type":"none","package_type":"hls","manifest_uri":"minno_Aip0NbKL-rIqGBf3R/index.m3u8","cdns":{"cdn":[{"name":"MNO_vod_cdn","priority":0,"base_uri":"https://eastus-mkio-dev.global.ssl.fastly.net/cdnproda-mnoproda/hls-itc"}]}}}</textarea>
+      </div>
+
+      <div class="card mt">
+        <h3>Identificação do episódio</h3>
+        <div class="row-3">
+          <div>
+            <label for="series_title"><strong>Série</strong></label>
+            <input id="series_title" name="series_title" placeholder="Minha Serie" required />
+          </div>
+          <div>
+            <label for="season_number"><strong>Temporada</strong></label>
+            <input id="season_number" name="season_number" type="number" min="1" placeholder="1" required />
+          </div>
+          <div>
+            <label for="episode_number"><strong>Episódio</strong></label>
+            <input id="episode_number" name="episode_number" type="number" min="1" placeholder="1" required />
+          </div>
+        </div>
+        <div class="mt">
+          <label for="episode_title"><strong>Título do Episódio</strong></label>
+          <input id="episode_title" name="episode_title" placeholder="Piloto" required />
+        </div>
+      </div>
+
+      <div class="card mt">
+        <div class="row">
+          <div>
+            <label for="output"><strong>Nome do arquivo</strong> (vazio = auto)</label>
+            <input id="output" name="output" placeholder="Serie-t1-e-1-Piloto.mp4" />
+            <div class="hint">Auto: Serie-t&lt;temporada&gt;-e-&lt;episodio&gt;-&lt;titulo&gt;.&lt;ext&gt;</div>
+            <div class="preview mt"><strong>Preview:</strong> <span id="namePreview"></span></div>
+          </div>
+          <div>
+            <label for="container"><strong>Contêiner</strong></label>
+            <select id="container" name="container">
+              <option value="mp4" selected>mp4</option>
+              <option value="mkv">mkv</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row mt">
+          <div>
+            <label for="user_agent"><strong>User-Agent</strong></label>
+            <input id="user_agent" name="user_agent" value="Mozilla/5.0" />
+          </div>
+          <div>
+            <label for="force_aac"><strong>Forçar áudio AAC</strong></label>
+            <div>
+              <input type="checkbox" id="force_aac" name="force_aac" />
+              <label for="force_aac">Re-encode áudio p/ AAC (compatibilidade MP4)</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mt">
+          <div>
+            <label for="referer"><strong>Referer</strong></label>
+            <input id="referer" name="referer" placeholder="https://site-que-serve-o-player/" />
+          </div>
+          <div>
+            <label for="origin"><strong>Origin</strong></label>
+            <input id="origin" name="origin" placeholder="https://site-que-serve-o-player/" />
+          </div>
+        </div>
+
+        <div class="row mt">
+          <div>
+            <label for="cookie"><strong>Cookie</strong></label>
+            <input id="cookie" name="cookie" placeholder="name=value; other=xyz" />
+          </div>
+          <div>
+            <label for="extra_headers"><strong>Headers extras</strong> (um por linha)</label>
+            <input id="extra_headers" name="extra_headers" placeholder="Authorization: Bearer xxx" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt">
+        <h3>Áudio e legendas</h3>
+        <div class="row">
+          <div>
+            <label><strong>Áudio</strong></label>
+            <div>
+              <label><input type="radio" name="audio_mode" value="default" /> Padrão</label>
+              <label><input type="radio" name="audio_mode" value="prefer" checked /> Preferir idioma</label>
+              <label><input type="radio" name="audio_mode" value="all" /> Todos</label>
+            </div>
+            <input id="audio_pref" name="audio_pref" placeholder="por,spa,eng" />
+            <div class="hint">Lista por ordem de preferência (ex.: por,spa,eng).</div>
+          </div>
+          <div>
+            <label><strong>Legendas</strong></label>
+            <div>
+              <label><input type="radio" name="subs_mode" value="none" checked /> Sem legendas</label>
+              <label><input type="radio" name="subs_mode" value="prefer" /> Preferir idioma</label>
+              <label><input type="radio" name="subs_mode" value="all" /> Todas</label>
+            </div>
+            <input id="subs_pref" name="subs_pref" placeholder="por,spa,eng" />
+            <div class="hint">Em MP4, convertemos para mov_text.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt">
+        <button type="submit" id="submitBtn">Baixar</button>
+        <div class="hint">Use apenas conteúdos sem DRM e com permissão.</div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Spinner overlay -->
+  <div class="overlay" id="overlay"><div class="spinner" aria-label="Baixando..."></div></div>
+  <!-- Hidden iframe to capture download and hide spinner when done -->
+  <iframe id="dl_iframe" name="dl_iframe" style="display:none"></iframe>
+
+  <script>
+    const form = document.getElementById('downloadForm');
+    const overlay = document.getElementById('overlay');
+    const submitBtn = document.getElementById('submitBtn');
+    const outputEl = document.getElementById('output');
+    const previewEl = document.getElementById('namePreview');
+    const dlFrame = document.getElementById('dl_iframe');
+
+    // localStorage
+    const LS_KEYS = ['series_title','season_number','episode_number','episode_title','container',
+                     'force_aac','user_agent','referer','origin','audio_pref','subs_pref'];
+    function saveLS(){
+      LS_KEYS.forEach(k=>{
+        const el=document.getElementById(k);
+        if(!el) return;
+        if(el.type==='checkbox') localStorage.setItem(k, el.checked?'1':'0');
+        else localStorage.setItem(k, el.value||'');
+      });
+      localStorage.setItem('audio_mode', (new FormData(form).get('audio_mode')||'prefer'));
+      localStorage.setItem('subs_mode',  (new FormData(form).get('subs_mode')||'none'));
+    }
+    function loadLS(){
+      LS_KEYS.forEach(k=>{
+        const el=document.getElementById(k);
+        const v=localStorage.getItem(k);
+        if(el && v!==null){
+          if(el.type==='checkbox') el.checked = v==='1'; else el.value = v;
+        }
+      });
+      const am = localStorage.getItem('audio_mode');
+      const sm = localStorage.getItem('subs_mode');
+      if(am){ const r=document.querySelector(`input[name="audio_mode"][value="${am}"]`); if(r) r.checked=true; }
+      if(sm){ const r=document.querySelector(`input[name="subs_mode"][value="${sm}"]`); if(r) r.checked=true; }
+    }
+
+    // name preview + auto-fill output if empty
+    function sanitize(s){ return (s||'').replace(/[\/\\]/g,' ').replace(/\s+/g,' ').trim().replace(/\s/g,'-'); }
+    function buildName(){
+      const series = sanitize(document.getElementById('series_title').value);
+      const season = document.getElementById('season_number').value;
+      const episode= document.getElementById('episode_number').value;
+      const title  = sanitize(document.getElementById('episode_title').value);
+      const cont   = document.getElementById('container').value || 'mp4';
+      if(!series) return '';
+      let name = series;
+      if(season)  name += `-t${parseInt(season,10)}`;
+      if(episode) name += `-e-${parseInt(episode,10)}`;
+      if(title)   name += `-${title}`;
+      return name + '.' + cont;
+    }
+    function updatePreview(){
+      const n = buildName();
+      previewEl.textContent = n || '(preencha os campos acima para auto-nome)';
+      saveLS();
+    }
+
+    ['series_title','season_number','episode_number','episode_title','container','output'].forEach(id=>{
+      document.getElementById(id).addEventListener('input', updatePreview);
+    });
+    document.addEventListener('DOMContentLoaded', ()=>{
+      loadLS();
+      updatePreview();
+    });
+
+    form.addEventListener('submit', ()=>{
+      overlay.style.display='flex';
+      submitBtn.disabled = true;
+      if(!outputEl.value.trim()){
+        const n = buildName();
+        if(n) outputEl.value = n;  // server also builds the same if still blank
+      }
+      saveLS();
+    });
+
+    // Hide spinner when the iframe finishes loading (download response reached)
+    dlFrame.addEventListener('load', ()=>{
+      overlay.style.display='none';
+      submitBtn.disabled = false;
+      // optional: try to read errors (same-origin)
+      try {
+        const txt = dlFrame.contentDocument?.body?.innerText || '';
+        if (txt && /ffmpeg failed/i.test(txt)) alert('Falha no download:\n' + txt.slice(0, 1000));
+      } catch (_) {}
+    });
+
+    // Fallback: when window regains focus (after browser save dialog), hide spinner
+    window.addEventListener('focus', ()=>{
+      setTimeout(()=>{ overlay.style.display='none'; submitBtn.disabled = false; }, 300);
+    });
+  </script>
+</body>
+</html>
