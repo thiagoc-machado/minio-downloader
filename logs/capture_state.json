@@ -1,0 +1,230 @@
+{
+  "latest": {
+    "capture_id": 1776415010624,
+    "received_at": 1776415010.6245213,
+    "source_url": "https://ottapp-appgw-amp-a.proda.mno.tv3cloud.com/v1/client/roll?mediaId=minno_86oIXias-rIqGBf3R-10767_Jitp_Reach_UHD&ownerUid=azuki&sessionId=324c1d21-c8dc-4dea-8214-a49c0a69a593&enablelowlatency=false",
+    "capture_type": "manifest",
+    "payload": {
+      "result": "success",
+      "response": {
+        "checksum": "f9b745bb1b0a45b68a26a9fa2e26ec95",
+        "version": "4.7.8.0.6",
+        "client_source_ip": "188.26.194.70",
+        "bookmark": 0,
+        "live": false,
+        "beacon_interval": 30,
+        "duration": 0,
+        "manifest_uri": "minno_86oIXias-rIqGBf3R-10767/index.m3u8",
+        "live_dvr_duration": 60,
+        "cdns": {
+          "cdn": [
+            {
+              "name": "MNO_vod_cdn",
+              "retrieval_type": "static",
+              "base_uri": "https://eastus-mkio-dev.global.ssl.fastly.net/cdnproda-mnoproda/hls-itc",
+              "priority": 0,
+              "threshold": 0
+            }
+          ]
+        },
+        "drm_type": "none",
+        "package_type": "hls",
+        "platform": "MF_Reserved_P_WebChrome",
+        "analytics_publish_percent": 100,
+        "program_entitlements": {
+          "activation": 1776364322000,
+          "ap": false,
+          "an": false,
+          "cx": false,
+          "dt": false,
+          "dl": false,
+          "expires": 4098038400000,
+          "fw": true,
+          "fh": false,
+          "av": false,
+          "hi": false,
+          "ih": "Unsupported Type",
+          "io": false,
+          "jb": false,
+          "max_bitrate": -1,
+          "max_file_size": -1,
+          "max_play_position": -1,
+          "min_play_position": -1,
+          "ob": false,
+          "oh": false,
+          "pb": false,
+          "ph": false,
+          "playcount": 2000,
+          "rn": false,
+          "rb": false,
+          "rw": true,
+          "sf": false,
+          "sr": false,
+          "session_count_enabled": true,
+          "tb": false,
+          "th": false,
+          "ts": false,
+          "view_expire_epoch": "4098038400000",
+          "wf": false
+        },
+        "view_expire_epoch": "4098038400000",
+        "personal_info": "eyJTdGF0ZSI6Ik0iLCJQb3N0YWxDb2RlIjoiMjgxMDgiLCJaaXAiOiIyODEwOCIsIklTTzMxNjYiOiJFUyJ9",
+        "isLowLatencyPlayback": false,
+        "prep_version": "0"
+      }
+    }
+  },
+  "manifest": {
+    "capture_id": 1776415010624,
+    "received_at": 1776415010.6245213,
+    "source_url": "https://ottapp-appgw-amp-a.proda.mno.tv3cloud.com/v1/client/roll?mediaId=minno_86oIXias-rIqGBf3R-10767_Jitp_Reach_UHD&ownerUid=azuki&sessionId=324c1d21-c8dc-4dea-8214-a49c0a69a593&enablelowlatency=false",
+    "capture_type": "manifest",
+    "payload": {
+      "result": "success",
+      "response": {
+        "checksum": "f9b745bb1b0a45b68a26a9fa2e26ec95",
+        "version": "4.7.8.0.6",
+        "client_source_ip": "188.26.194.70",
+        "bookmark": 0,
+        "live": false,
+        "beacon_interval": 30,
+        "duration": 0,
+        "manifest_uri": "minno_86oIXias-rIqGBf3R-10767/index.m3u8",
+        "live_dvr_duration": 60,
+        "cdns": {
+          "cdn": [
+            {
+              "name": "MNO_vod_cdn",
+              "retrieval_type": "static",
+              "base_uri": "https://eastus-mkio-dev.global.ssl.fastly.net/cdnproda-mnoproda/hls-itc",
+              "priority": 0,
+              "threshold": 0
+            }
+          ]
+        },
+        "drm_type": "none",
+        "package_type": "hls",
+        "platform": "MF_Reserved_P_WebChrome",
+        "analytics_publish_percent": 100,
+        "program_entitlements": {
+          "activation": 1776364322000,
+          "ap": false,
+          "an": false,
+          "cx": false,
+          "dt": false,
+          "dl": false,
+          "expires": 4098038400000,
+          "fw": true,
+          "fh": false,
+          "av": false,
+          "hi": false,
+          "ih": "Unsupported Type",
+          "io": false,
+          "jb": false,
+          "max_bitrate": -1,
+          "max_file_size": -1,
+          "max_play_position": -1,
+          "min_play_position": -1,
+          "ob": false,
+          "oh": false,
+          "pb": false,
+          "ph": false,
+          "playcount": 2000,
+          "rn": false,
+          "rb": false,
+          "rw": true,
+          "sf": false,
+          "sr": false,
+          "session_count_enabled": true,
+          "tb": false,
+          "th": false,
+          "ts": false,
+          "view_expire_epoch": "4098038400000",
+          "wf": false
+        },
+        "view_expire_epoch": "4098038400000",
+        "personal_info": "eyJTdGF0ZSI6Ik0iLCJQb3N0YWxDb2RlIjoiMjgxMDgiLCJaaXAiOiIyODEwOCIsIklTTzMxNjYiOiJFUyJ9",
+        "isLowLatencyPlayback": false,
+        "prep_version": "0"
+      }
+    }
+  },
+  "details": {
+    "capture_id": 1776415010352,
+    "received_at": 1776415010.3522756,
+    "source_url": "https://ottapp-appgw-client-a.proda.mno.tv3cloud.com/S1/subscriber/v4/programs/mno_86oIXias-rIqGBf3R-10767_minno_episode/play-options?storeId=HubsAndFeeds-Main&$groups=4000000&locationDetail=eyJDb3VudHJ5Q29kZSI6IkVTIiwiUG9zdGFsQ29kZSI6IjI4MTA4In0=",
+    "capture_type": "details",
+    "payload": {
+      "ProgramId": "mno_86oIXias-rIqGBf3R-10767_minno_episode",
+      "Vods": [
+        {
+          "Id": "minno_86oIXias-rIqGBf3R-10767",
+          "ItemType": "Title",
+          "IsPinned": false,
+          "IsEpisodeHidden": false,
+          "PlayActions": [
+            {
+              "OfferId": "f88bd162-0cce-4b32-9344-5a8d87405b4c",
+              "ExternalOfferId": "Parent_SUBS_nonFREE_VOD_Offer",
+              "VideoProfile": {
+                "PlaybackUri": "http://vsppvmproda1.cloudapp.net:5555/shls/minno_86oIXias-rIqGBf3R-10767/index.m3u8?device=mf_dash_abr_clear",
+                "PlaybackOrigin": "ONPREMISEDYNAMIC",
+                "IsEncrypted": false,
+                "Id": "minno_86oIXias-rIqGBf3R-10767_Jitp_Reach_UHD",
+                "Owner": "azuki",
+                "Encoding": "Jitp",
+                "QualityLevel": "ReachUHD",
+                "ClientType": "Reach"
+              },
+              "ExpirationUtc": "9999-12-31T22:26:00Z",
+              "TimeToExpiry": "2912336.13:49:10.3665486",
+              "HoursToExpiry": 69896077,
+              "StartUtc": "2026-04-16T18:32:02.059Z",
+              "TransactionType": "Subscription",
+              "Restrictions": [],
+              "Terms": "Standard offer T&Cs apply",
+              "TveResourceIds": [],
+              "IsLowLatencyEnabledOffer": false
+            }
+          ],
+          "CatalogInfo": {
+            "Name": "The Dead Sea Squirrels",
+            "ShowType": "TVShow",
+            "Description": "Merle and Pearl Squirrel have a need for speed! One boy trying to avoid his math homework plus one skating rink plus two ancient squirrels equals a failed test, a second chance, and a lesson learned. The always hilarious (and sometimes helpful) Merle and Pearl Squirrel teach 10-year-old Michael that a little hard work can go a long way.",
+            "UniversalProgramId": "mno_86oIXias-rIqGBf3R-10767_minno_episode",
+            "RuntimeSeconds": 1389,
+            "Ratings": [
+              {
+                "System": "mno",
+                "Value": "6-8"
+              }
+            ],
+            "Tags": [
+              "Feature"
+            ],
+            "IsAdult": false,
+            "SeriesId": "series_2122_minno",
+            "EpisodeName": "Ep. 3: Nutty Study Buddies",
+            "SeasonNumber": 1,
+            "SeasonId": "series_2122_minno_1",
+            "EpisodeNumber": "3",
+            "Locale": "en-us",
+            "HasContentAdvisory": false,
+            "AvailableUtc": "2025-04-01T00:00:00Z",
+            "IsThirdPartyContent": false,
+            "ImageBucketId": "images",
+            "SupportedImages": [
+              "16x9/Carousel1",
+              "16x9/Poster"
+            ]
+          },
+          "IsContentRestrictedForGeolocation": false,
+          "IsContentFree": false,
+          "IsLastChance": false
+        }
+      ],
+      "Schedules": [],
+      "DownloadsCountByAsset": []
+    }
+  }
+}

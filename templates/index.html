@@ -2,239 +2,1509 @@
 <html lang="pt-br">
 <head>
   <meta charset="utf-8" />
-  <title>Downloader HLS/DASH (JSON)</title>
+  <title>Downloader HLS/DASH</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 32px; }
-    .wrap { max-width: 980px; margin: 0 auto; }
-    textarea, input, select { width: 100%; box-sizing: border-box; }
-    textarea { min-height: 260px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-    button { padding: 12px 18px; font-weight: 600; cursor: pointer; }
-    .hint { color: #666; font-size: 12px; }
-    .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px; background: #fff; }
-    .mt { margin-top: 14px; }
+    :root {
+      --bg-0: #04111f;
+      --bg-1: #071a2e;
+      --panel: rgba(9, 18, 34, 0.82);
+      --panel-2: rgba(12, 24, 45, 0.92);
+      --line: rgba(148, 163, 184, 0.18);
+      --text: #e6f0ff;
+      --muted: #91a4bf;
+      --accent: #4dd4ff;
+      --accent-2: #21c78d;
+      --warning: #f59e0b;
+      --danger: #fb7185;
+      --shadow: 0 24px 80px rgba(2, 6, 23, 0.44);
+      --radius: 24px;
+    }
 
-    /* Spinner overlay */
-    .overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; z-index: 9999; }
-    .spinner { width: 70px; height: 70px; border-radius: 50%; border: 8px solid #e5e7eb; border-top-color: #2563eb; animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(77, 212, 255, 0.14), transparent 28%),
+        radial-gradient(circle at 80% 10%, rgba(33, 199, 141, 0.14), transparent 24%),
+        linear-gradient(180deg, var(--bg-1), var(--bg-0));
+      font-family: "Aptos", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    }
 
-    .preview { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #374151; }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.55), transparent 78%);
+      opacity: 0.45;
+    }
+
+    .wrap {
+      width: min(1220px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 22px 0 44px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.7fr);
+      align-items: end;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: calc(var(--radius) + 4px);
+      background: linear-gradient(160deg, rgba(10, 20, 39, 0.94), rgba(10, 20, 39, 0.78));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      animation: lift 360ms ease-out both;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(77, 212, 255, 0.22);
+      background: rgba(77, 212, 255, 0.08);
+      color: #bff1ff;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+
+    h1 {
+      margin: 10px 0 8px;
+      font-size: clamp(1.55rem, 3.4vw, 2.8rem);
+      line-height: 1.02;
+      letter-spacing: -0.05em;
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 70ch;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+
+    .hero-aside {
+      display: grid;
+      gap: 10px;
+    }
+
+    .stat {
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 13px;
+      color: #d6e8ff;
+      margin-bottom: 4px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .layout {
+      margin-top: 18px;
+      display: grid;
+      gap: 18px;
+      grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--panel), rgba(7, 15, 29, 0.88));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .card-body {
+      padding: 18px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .section-title h2,
+    .section-title h3 {
+      margin: 0;
+      line-height: 1.1;
+    }
+
+    .section-title p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(148, 163, 184, 0.17);
+      color: #d7e5f7;
+      font-size: 12px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .chip-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(77, 212, 255, 0.14);
+    }
+
+    .chip.warn .chip-dot { background: var(--warning); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14); }
+    .chip.ok .chip-dot { background: var(--accent-2); box-shadow: 0 0 0 4px rgba(33, 199, 141, 0.14); }
+    .chip.danger .chip-dot { background: var(--danger); box-shadow: 0 0 0 4px rgba(251, 113, 133, 0.14); }
+
+    .stack { display: grid; gap: 14px; }
+    .grid-2 { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .span-2 { grid-column: span 2; }
+    .span-3 { grid-column: 1 / -1; }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: #c8d5ea;
+      text-transform: uppercase;
+    }
+
+    textarea,
+    input,
+    select {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: rgba(5, 12, 24, 0.72);
+      color: var(--text);
+      padding: 12px 14px;
+      outline: none;
+      font: inherit;
+      transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+    }
+
+    textarea {
+      min-height: 220px;
+      resize: vertical;
+      line-height: 1.5;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+    }
+
+    textarea:focus,
+    input:focus,
+    select:focus {
+      border-color: rgba(77, 212, 255, 0.65);
+      box-shadow: 0 0 0 4px rgba(77, 212, 255, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .hint {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 11px 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .primary {
+      color: #031522;
+      background: linear-gradient(135deg, #8be8ff, #48d6ff 48%, #6fffb9);
+      box-shadow: 0 12px 28px rgba(72, 214, 255, 0.22);
+    }
+
+    .secondary {
+      color: var(--text);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .subtle {
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      box-shadow: none;
+      opacity: 0.9;
+    }
+
+    .subtle:hover {
+      opacity: 1;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .ghost {
+      color: #cfe0f6;
+      background: transparent;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .preview {
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .preview strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #d6e8ff;
+    }
+
+    .preview code,
+    .inline-code {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      color: #d9ecff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .preview .big {
+      font-size: 15px;
+      line-height: 1.45;
+      color: #eff7ff;
+      word-break: break-word;
+    }
+
+    .preview-list {
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .preview-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.16);
+      padding-bottom: 8px;
+    }
+
+    .preview-list li:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .preview-list span:first-child {
+      color: #d6e8ff;
+      flex: 0 0 auto;
+    }
+
+    .advanced {
+      margin-top: 18px;
+    }
+
+    details {
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--panel-2), rgba(7, 15, 29, 0.92));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    details summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 800;
+    }
+
+    details summary::-webkit-details-marker { display: none; }
+
+    details[open] summary {
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .details-body {
+      padding: 18px 20px 20px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .radio-row,
+    .checkbox-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .choice {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(255,255,255,0.04);
+      color: #d6e8ff;
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .choice input {
+      width: auto;
+      margin: 0;
+      accent-color: var(--accent);
+    }
+
+    .footer-bar {
+      position: sticky;
+      bottom: 14px;
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(4, 12, 25, 0.8);
+      box-shadow: 0 18px 50px rgba(2, 6, 23, 0.32);
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .footer-stack {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+      flex: 1 1 360px;
+    }
+
+    .footer-copy {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .download-status {
+      color: #d6e8ff;
+      font-size: 13px;
+      line-height: 1.45;
+      min-height: 1.4em;
+      word-break: break-word;
+    }
+
+    .download-progress {
+      display: grid;
+      gap: 8px;
+    }
+
+    .download-progress-track {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.18);
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .download-progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 160ms ease;
+    }
+
+    .download-progress-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    @keyframes lift {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-2,
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .span-2 {
+        grid-column: auto;
+      }
+
+      .footer-bar {
+        position: static;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Baixar via JSON (HLS/DASH)</h1>
-    <form id="downloadForm" method="post" action="/download" target="dl_iframe">
-      <div class="card">
-        <label for="json_input"><strong>JSON da API</strong></label>
-        <textarea id="json_input" name="json_input" placeholder='Cole aqui o JSON completo com "response"…'>{"result":"success","response":{"drm_type":"none","package_type":"hls","manifest_uri":"minno_Aip0NbKL-rIqGBf3R/index.m3u8","cdns":{"cdn":[{"name":"MNO_vod_cdn","priority":0,"base_uri":"https://eastus-mkio-dev.global.ssl.fastly.net/cdnproda-mnoproda/hls-itc"}]}}}</textarea>
-      </div>
-
-      <div class="card mt">
-        <h3>Identificação do episódio</h3>
-        <div class="row-3">
-          <div>
-            <label for="series_title"><strong>Série</strong></label>
-            <input id="series_title" name="series_title" placeholder="Minha Serie" required />
-          </div>
-          <div>
-            <label for="season_number"><strong>Temporada</strong></label>
-            <input id="season_number" name="season_number" type="number" min="1" placeholder="1" required />
-          </div>
-          <div>
-            <label for="episode_number"><strong>Episódio</strong></label>
-            <input id="episode_number" name="episode_number" type="number" min="1" placeholder="1" required />
-          </div>
+    <section class="hero">
+        <div>
+          <div class="eyebrow">HLS / DASH sem DRM</div>
+          <h1>Baixar, ajustar nome e salvar com menos cliques</h1>
+          <p class="subtitle">
+          Cole os dois JSONs, corrija só o nome se precisar e baixe o arquivo. O fluxo tenta
+          preencher os campos automaticamente para reduzir trabalho manual.
+          </p>
         </div>
-        <div class="mt">
-          <label for="episode_title"><strong>Título do Episódio</strong></label>
-          <input id="episode_title" name="episode_title" placeholder="Piloto" required />
+      <div class="hero-aside">
+        <div class="stat">
+          <strong>Entrada direta</strong>
+          <span>Dois JSONs, um nome ajustável e um botão de download.</span>
+        </div>
+        <div class="stat">
+          <strong>Preenchimento automático</strong>
+          <span>Os dados do vídeo ajudam a completar série, temporada e episódio.</span>
         </div>
       </div>
+    </section>
 
-      <div class="card mt">
-        <div class="row">
-          <div>
-            <label for="output"><strong>Nome do arquivo</strong> (vazio = auto)</label>
-            <input id="output" name="output" placeholder="Serie-t1-e-1-Piloto.mp4" />
-            <div class="hint">Auto: Serie-t&lt;temporada&gt;-e-&lt;episodio&gt;-&lt;titulo&gt;.&lt;ext&gt;</div>
-            <div class="preview mt"><strong>Preview:</strong> <span id="namePreview"></span></div>
-          </div>
-          <div>
-            <label for="container"><strong>Contêiner</strong></label>
-            <select id="container" name="container">
-              <option value="mp4" selected>mp4</option>
-              <option value="mkv">mkv</option>
-            </select>
-          </div>
-        </div>
+    <form id="downloadForm" method="post" action="/download">
+      <div class="layout">
+        <section class="card">
+          <div class="card-body stack">
+            <div class="section-title">
+              <div>
+                <h2>JSONs</h2>
+                <p>Cole os dois JSONs aqui. O de vídeo vai em cima e o de detalhes vai embaixo.</p>
+              </div>
+            </div>
 
-        <div class="row mt">
-          <div>
-            <label for="user_agent"><strong>User-Agent</strong></label>
-            <input id="user_agent" name="user_agent" value="Mozilla/5.0" />
+            <label for="json_input">JSON da API</label>
+            <textarea id="json_input" name="json_input" spellcheck="false" placeholder='Cole aqui o JSON completo com "response"…'>{"result":"success","response":{"drm_type":"none","package_type":"hls","manifest_uri":"minno_Aip0NbKL-rIqGBf3R/index.m3u8","cdns":{"cdn":[{"name":"MNO_vod_cdn","priority":0,"base_uri":"https://eastus-mkio-dev.global.ssl.fastly.net/cdnproda-mnoproda/hls-itc"}]}}}</textarea>
+            <div class="hint">Use o JSON do <span class="inline-code">roll</span> aqui. Ele define a URL do download.</div>
+
+            <label for="details_json" style="margin-top:10px">JSON detalhes</label>
+            <textarea id="details_json" name="details_json" spellcheck="false" placeholder='Cole aqui o JSON com ProgramId, Vods, CatalogInfo, SeasonNumber, EpisodeNumber…'></textarea>
+            <div class="hint">Use o JSON de <span class="inline-code">play-options</span> aqui. Ele preenche série, temporada e episódio.</div>
           </div>
-          <div>
-            <label for="force_aac"><strong>Forçar áudio AAC</strong></label>
-            <div>
-              <input type="checkbox" id="force_aac" name="force_aac" />
-              <label for="force_aac">Re-encode áudio p/ AAC (compatibilidade MP4)</label>
+        </section>
+
+        <section class="card">
+          <div class="card-body stack">
+            <div class="section-title">
+              <div>
+                <h2>Ajuste final</h2>
+                <p>Corrija só o que precisar. O nome do arquivo é gerado automaticamente.</p>
+              </div>
+            </div>
+
+            <div class="preview">
+              <strong>Nome final</strong>
+              <div class="big" id="namePreview">Preencha o JSON para gerar o nome automaticamente.</div>
+            </div>
+
+            <div class="preview">
+              <strong>Destino na biblioteca</strong>
+              <div class="big" id="destinationPreview">/media/cristaos/Serie/Season 01/arquivo.ext</div>
+            </div>
+
+            <div class="grid-2">
+              <div>
+                <label for="series_title">Série / título base</label>
+                <input id="series_title" name="series_title" placeholder="Minha Série / Filme / Obra" />
+              </div>
+              <div class="grid-2" id="seasonBlock">
+                <div>
+                  <label for="season_number">Temporada</label>
+                  <input id="season_number" name="season_number" type="number" min="1" placeholder="1" />
+                </div>
+                <div>
+                  <label for="episode_number">Episódio</label>
+                  <input id="episode_number" name="episode_number" type="number" min="1" placeholder="1" />
+                </div>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="span-2">
+                <label for="episode_title">Título do arquivo / obra</label>
+                <input id="episode_title" name="episode_title" placeholder="Piloto" />
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div>
+                <label for="output">Nome do arquivo</label>
+                <input id="output" name="output" placeholder="vazio = automático" />
+              </div>
+              <div>
+                <label for="container">Contêiner</label>
+                <select id="container" name="container">
+                  <option value="mp4" selected>mp4</option>
+                  <option value="mkv">mkv</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div>
+                <label for="category">Categoria</label>
+                <select id="category" name="category">
+                  <option value="series" selected>Séries</option>
+                  <option value="movies">Filmes</option>
+                  <option value="christao">Cristãos</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="footer-bar">
+        <div class="footer-stack">
+          <div class="footer-copy">
+            Ajuste só o necessário e baixe o arquivo.
+          </div>
+          <div class="download-status" id="statusLine">Pronto para baixar.</div>
+          <div class="download-progress" aria-live="polite">
+            <div class="download-progress-track" aria-hidden="true">
+              <div class="download-progress-fill" id="downloadProgressFill"></div>
+            </div>
+            <div class="download-progress-meta">
+              <span id="downloadProgressLabel">Sem job ativo.</span>
+              <span id="downloadProgressPercent">0%</span>
             </div>
           </div>
         </div>
-
-        <div class="row mt">
-          <div>
-            <label for="referer"><strong>Referer</strong></label>
-            <input id="referer" name="referer" placeholder="https://site-que-serve-o-player/" />
-          </div>
-          <div>
-            <label for="origin"><strong>Origin</strong></label>
-            <input id="origin" name="origin" placeholder="https://site-que-serve-o-player/" />
-          </div>
+        <div class="actions" style="margin-top:0">
+          <button type="button" id="downloadScriptBtn" class="secondary subtle">Baixar script do Tampermonkey</button>
+          <button type="submit" id="submitBtn" class="primary">Baixar</button>
         </div>
-
-        <div class="row mt">
-          <div>
-            <label for="cookie"><strong>Cookie</strong></label>
-            <input id="cookie" name="cookie" placeholder="name=value; other=xyz" />
-          </div>
-          <div>
-            <label for="extra_headers"><strong>Headers extras</strong> (um por linha)</label>
-            <input id="extra_headers" name="extra_headers" placeholder="Authorization: Bearer xxx" />
-          </div>
-        </div>
-      </div>
-
-      <div class="card mt">
-        <h3>Áudio e legendas</h3>
-        <div class="row">
-          <div>
-            <label><strong>Áudio</strong></label>
-            <div>
-              <label><input type="radio" name="audio_mode" value="default" /> Padrão</label>
-              <label><input type="radio" name="audio_mode" value="prefer" checked /> Preferir idioma</label>
-              <label><input type="radio" name="audio_mode" value="all" /> Todos</label>
-            </div>
-            <input id="audio_pref" name="audio_pref" placeholder="por,spa,eng" />
-            <div class="hint">Lista por ordem de preferência (ex.: por,spa,eng).</div>
-          </div>
-          <div>
-            <label><strong>Legendas</strong></label>
-            <div>
-              <label><input type="radio" name="subs_mode" value="none" checked /> Sem legendas</label>
-              <label><input type="radio" name="subs_mode" value="prefer" /> Preferir idioma</label>
-              <label><input type="radio" name="subs_mode" value="all" /> Todas</label>
-            </div>
-            <input id="subs_pref" name="subs_pref" placeholder="por,spa,eng" />
-            <div class="hint">Em MP4, convertemos para mov_text.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt">
-        <button type="submit" id="submitBtn">Baixar</button>
-        <div class="hint">Use apenas conteúdos sem DRM e com permissão.</div>
       </div>
     </form>
   </div>
 
-  <!-- Spinner overlay -->
-  <div class="overlay" id="overlay"><div class="spinner" aria-label="Baixando..."></div></div>
-  <!-- Hidden iframe to capture download and hide spinner when done -->
-  <iframe id="dl_iframe" name="dl_iframe" style="display:none"></iframe>
-
   <script>
     const form = document.getElementById('downloadForm');
-    const overlay = document.getElementById('overlay');
     const submitBtn = document.getElementById('submitBtn');
+    const statusLine = document.getElementById('statusLine');
+    const downloadProgressFill = document.getElementById('downloadProgressFill');
+    const downloadProgressLabel = document.getElementById('downloadProgressLabel');
+    const downloadProgressPercent = document.getElementById('downloadProgressPercent');
     const outputEl = document.getElementById('output');
     const previewEl = document.getElementById('namePreview');
-    const dlFrame = document.getElementById('dl_iframe');
+    const jsonEl = document.getElementById('json_input');
+    const detailsEl = document.getElementById('details_json');
+    const sourceChips = document.getElementById('sourceChips');
+    const metadataChips = document.getElementById('metadataChips');
+    const destinationPreview = document.getElementById('destinationPreview');
+    const captureStatus = document.getElementById('captureStatus');
+    const captureDebugSummary = document.getElementById('captureDebugSummary');
+    const captureDebugType = document.getElementById('captureDebugType');
+    const captureDebugSession = document.getElementById('captureDebugSession');
+    const captureDebugKey = document.getElementById('captureDebugKey');
+    const captureExpectedKey = document.getElementById('captureExpectedKey');
+    const captureDebugSource = document.getElementById('captureDebugSource');
+    const captureDebugPayload = document.getElementById('captureDebugPayload');
+    const setExpectedKeyBtn = document.getElementById('setExpectedKeyBtn');
+    const categoryEl = document.getElementById('category');
+    const seasonBlock = document.getElementById('seasonBlock');
+    const seasonInput = document.getElementById('season_number');
+    const fillFromJsonBtn = document.getElementById('fillFromJsonBtn');
+    const clearManualBtn = document.getElementById('clearManualBtn');
+    const downloadScriptBtn = document.getElementById('downloadScriptBtn');
+    const pullCaptureBtn = document.getElementById('pullCaptureBtn');
+    const FIELD_IDS = [
+      'series_title', 'season_number', 'episode_number', 'episode_title',
+      'program_id', 'vod_id', 'series_id', 'show_type', 'runtime_seconds',
+      'output', 'container', 'user_agent', 'referer', 'origin', 'cookie',
+      'extra_headers', 'audio_pref', 'subs_pref', 'category'
+    ];
 
-    // localStorage
-    const LS_KEYS = ['series_title','season_number','episode_number','episode_title','container',
-                     'force_aac','user_agent','referer','origin','audio_pref','subs_pref'];
-    function saveLS(){
-      LS_KEYS.forEach(k=>{
-        const el=document.getElementById(k);
-        if(!el) return;
-        if(el.type==='checkbox') localStorage.setItem(k, el.checked?'1':'0');
-        else localStorage.setItem(k, el.value||'');
-      });
-      localStorage.setItem('audio_mode', (new FormData(form).get('audio_mode')||'prefer'));
-      localStorage.setItem('subs_mode',  (new FormData(form).get('subs_mode')||'none'));
-    }
-    function loadLS(){
-      LS_KEYS.forEach(k=>{
-        const el=document.getElementById(k);
-        const v=localStorage.getItem(k);
-        if(el && v!==null){
-          if(el.type==='checkbox') el.checked = v==='1'; else el.value = v;
+    let lastDetailsMeta = null;
+    let lastCaptureId = localStorage.getItem('last_capture_id') || '';
+    let lastManifestCaptureId = localStorage.getItem('last_manifest_capture_id') || '';
+    let lastDetailsCaptureId = localStorage.getItem('last_details_capture_id') || '';
+    let detailsRefreshTimer = null;
+    let capturePollTimer = null;
+    let downloadJobPollTimer = null;
+
+    const LS_KEYS = [...FIELD_IDS, 'json_input', 'details_json', 'force_aac', 'audio_mode', 'subs_mode', 'capture_expected_key'];
+
+    function saveLS() {
+      LS_KEYS.forEach((key) => {
+        const el = document.getElementById(key);
+        if (!el) return;
+        if (el.type === 'checkbox') {
+          localStorage.setItem(key, el.checked ? '1' : '0');
+        } else {
+          localStorage.setItem(key, el.value || '');
         }
       });
-      const am = localStorage.getItem('audio_mode');
-      const sm = localStorage.getItem('subs_mode');
-      if(am){ const r=document.querySelector(`input[name="audio_mode"][value="${am}"]`); if(r) r.checked=true; }
-      if(sm){ const r=document.querySelector(`input[name="subs_mode"][value="${sm}"]`); if(r) r.checked=true; }
+      const audioMode = (new FormData(form).get('audio_mode') || 'prefer');
+      const subsMode = (new FormData(form).get('subs_mode') || 'none');
+      localStorage.setItem('audio_mode', audioMode);
+      localStorage.setItem('subs_mode', subsMode);
+      if (captureExpectedKey) {
+        localStorage.setItem('capture_expected_key', captureExpectedKey.value.trim());
+      }
     }
 
-    // name preview + auto-fill output if empty
-    function sanitize(s){ return (s||'').replace(/[\/\\]/g,' ').replace(/\s+/g,' ').trim().replace(/\s/g,'-'); }
-    function buildName(){
-      const series = sanitize(document.getElementById('series_title').value);
-      const season = document.getElementById('season_number').value;
-      const episode= document.getElementById('episode_number').value;
-      const title  = sanitize(document.getElementById('episode_title').value);
-      const cont   = document.getElementById('container').value || 'mp4';
-      if(!series) return '';
-      let name = series;
-      if(season)  name += `-t${parseInt(season,10)}`;
-      if(episode) name += `-e-${parseInt(episode,10)}`;
-      if(title)   name += `-${title}`;
-      return name + '.' + cont;
-    }
-    function updatePreview(){
-      const n = buildName();
-      previewEl.textContent = n || '(preencha os campos acima para auto-nome)';
-      saveLS();
+    function loadLS() {
+      const audioMode = localStorage.getItem('audio_mode');
+      const subsMode = localStorage.getItem('subs_mode');
+      if (audioMode) {
+        const radio = document.querySelector(`input[name="audio_mode"][value="${audioMode}"]`);
+        if (radio) radio.checked = true;
+      }
+      if (subsMode) {
+        const radio = document.querySelector(`input[name="subs_mode"][value="${subsMode}"]`);
+        if (radio) radio.checked = true;
+      }
+      if (captureExpectedKey) {
+        captureExpectedKey.value = localStorage.getItem('capture_expected_key') || '';
+      }
     }
 
-    ['series_title','season_number','episode_number','episode_title','container','output'].forEach(id=>{
-      document.getElementById(id).addEventListener('input', updatePreview);
-    });
-    document.addEventListener('DOMContentLoaded', ()=>{
-      loadLS();
-      updatePreview();
-    });
+    function resetFormState(message = '', clearStorage = true) {
+      const preservedCaptureExpectedKey = captureExpectedKey ? (captureExpectedKey.value || localStorage.getItem('capture_expected_key') || '') : '';
+      jsonEl.value = '';
+      detailsEl.value = '';
+      outputEl.value = '';
 
-    form.addEventListener('submit', ()=>{
-      overlay.style.display='flex';
-      submitBtn.disabled = true;
-      if(!outputEl.value.trim()){
-        const n = buildName();
-        if(n) outputEl.value = n;  // server also builds the same if still blank
+      FIELD_IDS.forEach((id) => {
+        const el = getField(id);
+        if (!el) return;
+        if (el.type === 'checkbox') {
+          el.checked = false;
+        } else if (el.type === 'radio') {
+          if (id === 'category') {
+            // no-op
+          }
+        } else {
+          el.value = '';
+        }
+        el.dataset.manual = '0';
+      });
+
+      const defaults = {
+        category: 'series',
+        container: 'mp4',
+      };
+      Object.entries(defaults).forEach(([id, value]) => {
+        const el = getField(id);
+        if (el) el.value = value;
+      });
+      const forceAac = getField('force_aac');
+      if (forceAac) {
+        forceAac.checked = false;
+      }
+      const audioDefault = document.querySelector('input[name="audio_mode"][value="prefer"]');
+      const subsDefault = document.querySelector('input[name="subs_mode"][value="none"]');
+      if (audioDefault) audioDefault.checked = true;
+      if (subsDefault) subsDefault.checked = true;
+
+      lastDetailsMeta = null;
+      lastCaptureId = '';
+      lastManifestCaptureId = '';
+      lastDetailsCaptureId = '';
+      localStorage.removeItem('last_capture_id');
+      localStorage.removeItem('last_manifest_capture_id');
+      localStorage.removeItem('last_details_capture_id');
+      if (clearStorage) {
+        LS_KEYS.filter((key) => key !== 'capture_expected_key').forEach((key) => localStorage.removeItem(key));
+        localStorage.setItem('category', 'series');
+        localStorage.setItem('container', 'mp4');
+        localStorage.setItem('audio_mode', 'prefer');
+        localStorage.setItem('subs_mode', 'none');
+        if (preservedCaptureExpectedKey) {
+          localStorage.setItem('capture_expected_key', preservedCaptureExpectedKey);
+        }
+      }
+      if (captureExpectedKey) captureExpectedKey.value = preservedCaptureExpectedKey;
+
+      refreshMetaView();
+      updateCaptureDebug(null);
+      if (message) {
+        updateCaptureStatus(message);
       }
       saveLS();
-    });
+    }
 
-    // Hide spinner when the iframe finishes loading (download response reached)
-    dlFrame.addEventListener('load', ()=>{
-      overlay.style.display='none';
-      submitBtn.disabled = false;
-      // optional: try to read errors (same-origin)
+    function sanitize(value) {
+      return (value || '')
+        .replace(/[\/\\]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\s/g, '-')
+        .replace(/[^A-Za-z0-9._-]/g, '');
+    }
+
+    function getPath(obj, path) {
+      return path.reduce((cur, key) => (cur && typeof cur === 'object') ? cur[key] : undefined, obj);
+    }
+
+    function firstValue(obj, candidates, predicate) {
+      for (const candidate of candidates) {
+        const value = Array.isArray(candidate) ? getPath(obj, candidate) : obj?.[candidate];
+        if (predicate(value)) return value;
+      }
+      return undefined;
+    }
+
+    function firstText(obj, candidates) {
+      const value = firstValue(obj, candidates, (v) => typeof v === 'string' && v.trim());
+      return typeof value === 'string' ? value.trim() : '';
+    }
+
+    function firstInt(obj, candidates) {
+      const value = firstValue(obj, candidates, (v) => Number.isInteger(v) || (typeof v === 'string' && /^\d+$/.test(v.trim())));
+      if (Number.isInteger(value)) return value;
+      if (typeof value === 'string') return parseInt(value.trim(), 10);
+      return null;
+    }
+
+    function unwrapResponse(data) {
+      if (data && typeof data === 'object' && data.response && typeof data.response === 'object') {
+        return data.response;
+      }
+      return data || {};
+    }
+
+    function extractDetailsMetadata(data) {
+      const vod = Array.isArray(data?.Vods) ? data.Vods.find((item) => item && typeof item === 'object') || {} : {};
+      const catalog = vod && typeof vod.CatalogInfo === 'object' ? vod.CatalogInfo : {};
+      const playAction = Array.isArray(vod?.PlayActions) ? vod.PlayActions.find((item) => item && typeof item === 'object') || {} : {};
+      const videoProfile = playAction && typeof playAction.VideoProfile === 'object' ? playAction.VideoProfile : {};
+      const seriesTitle = firstText(data, ['SeriesTitle', 'SeriesName']) || firstText(catalog, ['Name']);
+      return {
+        series_title: seriesTitle,
+        episode_title: firstText(catalog, ['EpisodeName', 'EpisodeTitle', 'Name']),
+        season_number: firstInt(catalog, ['SeasonNumber']),
+        episode_number: firstInt(catalog, ['EpisodeNumber']),
+        description: firstText(catalog, ['Description']),
+        program_id: firstText(data, ['ProgramId']),
+        vod_id: firstText(vod, ['Id']),
+        show_type: firstText(catalog, ['ShowType']),
+        series_id: firstText(catalog, ['SeriesId']),
+        runtime_seconds: firstInt(catalog, ['RuntimeSeconds']),
+        locale: firstText(catalog, ['Locale']),
+        is_adult: catalog?.IsAdult ?? null,
+        is_third_party_content: catalog?.IsThirdPartyContent ?? null,
+        has_content_advisory: catalog?.HasContentAdvisory ?? null,
+        available_utc: firstText(catalog, ['AvailableUtc']),
+        image_bucket_id: firstText(catalog, ['ImageBucketId']),
+        supported_images: Array.isArray(catalog?.SupportedImages) ? catalog.SupportedImages : [],
+        ratings: Array.isArray(catalog?.Ratings) ? catalog.Ratings : [],
+        tags: Array.isArray(catalog?.Tags) ? catalog.Tags : [],
+        playback_uri: firstText(videoProfile, ['PlaybackUri']),
+        playback_origin: firstText(videoProfile, ['PlaybackOrigin']),
+        video_profile_id: firstText(videoProfile, ['Id']),
+        video_quality_level: firstText(videoProfile, ['QualityLevel']),
+        video_client_type: firstText(videoProfile, ['ClientType']),
+        video_encoding: firstText(videoProfile, ['Encoding']),
+      };
+    }
+
+    function buildNameFromFields() {
+      const category = categoryEl.value || 'series';
+      const seriesValue = document.getElementById('series_title').value.trim() || lastDetailsMeta?.series_title || '';
+      const seasonValue = document.getElementById('season_number').value || (lastDetailsMeta?.season_number ?? '');
+      const episodeValue = document.getElementById('episode_number').value || (lastDetailsMeta?.episode_number ?? '');
+      const titleValue = document.getElementById('episode_title').value.trim() || lastDetailsMeta?.episode_title || '';
+      const series = sanitize(seriesValue) || 'video';
+      const season = seasonValue;
+      const episode = episodeValue;
+      const title = sanitize(titleValue);
+      const cont = document.getElementById('container').value || 'mp4';
+
+      let name = series;
+      if (category === 'series') {
+        if (season !== '' && season !== null && season !== undefined) name += `-t${parseInt(season, 10)}`;
+        if (episode !== '' && episode !== null && episode !== undefined) name += `-e-${parseInt(episode, 10)}`;
+        if (title) name += `-${title}`;
+      } else if (title && title !== series) {
+        name += `-${title}`;
+      }
+      return `${name}.${cont}`;
+    }
+
+    function buildLibraryPathPreview() {
+      const category = categoryEl.value || 'series';
+      const roots = {
+        series: '/media/series',
+        movies: '/media/movies',
+        christao: '/media/cristaos',
+      };
+      const root = roots[category] || roots.series;
+      const series = sanitize(document.getElementById('series_title').value.trim() || lastDetailsMeta?.series_title || '') || 'video';
+      const seasonRaw = document.getElementById('season_number').value || (lastDetailsMeta?.season_number ?? '');
+      const seasonNum = seasonRaw ? parseInt(seasonRaw, 10) : 0;
+      const filename = outputEl.value.trim() || buildNameFromFields();
+      if (category === 'series') {
+        return `${root}/${series}/Season ${String(seasonNum).padStart(2, '0')}/${filename}`;
+      }
+      return `${root}/${series}/${filename}`;
+    }
+
+    function getField(id) {
+      return document.getElementById(id);
+    }
+
+    function setFieldValue(id, value, force = false) {
+      const el = getField(id);
+      if (!el || value === undefined || value === null || value === '') return;
+      const hasManualEdit = el.dataset.manual === '1';
+      if (!force && hasManualEdit && el.value.trim()) return;
+      el.value = String(value);
+      if (force) {
+        el.dataset.manual = '0';
+      }
+    }
+
+    function syncCategoryUi() {
+      const category = categoryEl.value || 'series';
+      const isSeries = category === 'series';
+      seasonBlock.style.display = isSeries ? '' : 'none';
+      seasonInput.disabled = !isSeries;
+    }
+
+    function setChipContainer(container, items) {
+      container.innerHTML = '';
+      if (!items.length) {
+        const fallback = document.createElement('span');
+        fallback.className = 'chip';
+        const dot = document.createElement('span');
+        dot.className = 'chip-dot';
+        const text = document.createElement('span');
+        text.textContent = 'sem dados';
+        fallback.appendChild(dot);
+        fallback.appendChild(text);
+        container.appendChild(fallback);
+        return;
+      }
+      items.forEach(({ label, tone = '' }) => {
+        const el = document.createElement('span');
+        el.className = `chip ${tone}`.trim();
+        const dot = document.createElement('span');
+        dot.className = 'chip-dot';
+        const text = document.createElement('span');
+        text.textContent = label;
+        el.appendChild(dot);
+        el.appendChild(text);
+        container.appendChild(el);
+      });
+    }
+
+    function updatePreview() {
+      const nextName = outputEl.value.trim() || buildNameFromFields();
+      previewEl.textContent = nextName || 'Preencha o JSON para gerar o nome automaticamente.';
+      destinationPreview.textContent = buildLibraryPathPreview();
+      syncCategoryUi();
+    }
+
+    function fillMetadataFromDetails(meta, force = false) {
+      if (!meta) return;
+      setFieldValue('series_title', meta.series_title, force);
+      setFieldValue('season_number', meta.season_number, force);
+      setFieldValue('episode_number', meta.episode_number, force);
+      setFieldValue('episode_title', meta.episode_title, force);
+      setFieldValue('program_id', meta.program_id, force);
+      setFieldValue('vod_id', meta.vod_id, force);
+      setFieldValue('series_id', meta.series_id, force);
+      setFieldValue('show_type', meta.show_type, force);
+      setFieldValue('runtime_seconds', meta.runtime_seconds, force);
+
+      if (force) {
+        outputEl.value = '';
+      }
+      updatePreview();
+      saveLS();
+    }
+
+    function updateCaptureStatus(message, tone = '') {
+      if (!captureStatus) return;
+      captureStatus.textContent = message;
+      captureStatus.style.color = tone === 'danger' ? 'var(--danger)' : (tone === 'ok' ? 'var(--accent-2)' : 'var(--text)');
+    }
+
+    function updateCaptureDebug(record) {
+      const hasRecord = Boolean(record && record.payload);
+      const expectedKey = record && typeof record.expected_key === 'string' ? record.expected_key : '';
+      if (captureDebugSummary) {
+        captureDebugSummary.textContent = hasRecord
+          ? `Última captura recebida em ${new Date((record.received_at || Date.now() / 1000) * 1000).toLocaleString()}`
+          : 'Sem captura recebida ainda.';
+      }
+      if (captureDebugType) {
+        captureDebugType.value = hasRecord ? String(record.capture_type || '-') : '-';
+      }
+      if (captureDebugSession) {
+        captureDebugSession.value = hasRecord ? String(record.capture_session || '-') : '-';
+      }
+      if (captureDebugKey) {
+        captureDebugKey.value = hasRecord ? String(record.capture_key || '-') : '-';
+      }
+      if (captureExpectedKey) {
+        captureExpectedKey.value = expectedKey || localStorage.getItem('capture_expected_key') || '';
+      }
+      if (captureDebugSource) {
+        captureDebugSource.value = hasRecord ? String(record.source_url || '-') : '-';
+      }
+      if (captureDebugPayload) {
+        captureDebugPayload.value = hasRecord
+          ? (record.payload_text || JSON.stringify(record.payload, null, 2))
+          : '';
+      }
+    }
+
+    function looksLikeManifestPayload(payload) {
+      const root = unwrapResponse(payload);
+      if (!root || typeof root !== 'object') return false;
+      if (root.manifest_uri || root.manifestUrl || root.manifest_url) return true;
+      if (root.playback_uri || root.playbackUri || root.playback_url || root.playbackUrl) return true;
+      if (root.stream_uri || root.streamUri || root.stream_url || root.streamUrl) return true;
+      if (root.hls_url || root.hlsUrl || root.url) return true;
+      return Boolean(root.cdns && Array.isArray(root.cdns.cdn) && root.cdns.cdn.length);
+    }
+
+    function applyCapturedPayload(record, auto = true) {
+      const payload = record?.payload ?? null;
+      updateCaptureDebug(record);
+      if (!payload) {
+        updateCaptureStatus('Nenhuma captura válida recebida ainda.');
+        return;
+      }
+      const text = JSON.stringify(payload, null, 2);
+      const captureType = String(record.capture_type || '').toLowerCase();
+      if (captureType === 'manifest' || (!captureType && looksLikeManifestPayload(payload))) {
+        jsonEl.value = text;
+        if (auto) {
+          refreshMetaView();
+        } else {
+          refreshMainJsonStatus();
+        }
+      } else {
+        detailsEl.value = text;
+        if (auto) {
+          refreshMetaView();
+        } else {
+          refreshDetailsView();
+        }
+      }
+      const captureId = String(record.capture_id || '');
+      if (captureId) {
+        lastCaptureId = captureId;
+        localStorage.setItem('last_capture_id', captureId);
+      }
+      const sourceUrl = record.source_url ? ` de ${record.source_url}` : '';
+      const kind = record.capture_type ? ` (${record.capture_type})` : '';
+      updateCaptureStatus(`Captura${kind} recebida${sourceUrl} às ${new Date((record.received_at || Date.now() / 1000) * 1000).toLocaleString()}.`, 'ok');
+    }
+
+    function applyCapturedPayloadToField(record, target, auto = true) {
+      if (!record || !record.payload) return false;
+      const text = JSON.stringify(record.payload, null, 2);
+      if (target === 'manifest') {
+        jsonEl.value = text;
+        if (auto) {
+          refreshMetaView();
+        } else {
+          refreshMainJsonStatus();
+        }
+      } else if (target === 'details') {
+        detailsEl.value = text;
+        if (auto) {
+          refreshMetaView();
+        } else {
+          refreshDetailsView();
+        }
+      } else {
+        return false;
+      }
+      const captureId = String(record.capture_id || '');
+      if (captureId) {
+        lastCaptureId = captureId;
+        localStorage.setItem('last_capture_id', captureId);
+      }
+      const sourceUrl = record.source_url ? ` de ${record.source_url}` : '';
+      const kind = record.capture_type ? ` (${record.capture_type})` : '';
+      updateCaptureStatus(`Captura${kind} recebida${sourceUrl} às ${new Date((record.received_at || Date.now() / 1000) * 1000).toLocaleString()}.`, 'ok');
+      return true;
+    }
+
+    async function saveExpectedCaptureKey() {
+      const value = (captureExpectedKey?.value || '').trim();
+      localStorage.setItem('capture_expected_key', value);
       try {
-        const txt = dlFrame.contentDocument?.body?.innerText || '';
-        if (txt && /ffmpeg failed/i.test(txt)) alert('Falha no download:\n' + txt.slice(0, 1000));
-      } catch (_) {}
+        const response = await fetch('/api/capture/expected-key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ expected_key: value }),
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json().catch(() => ({}));
+        updateCaptureStatus(value
+          ? `Chave esperada travada em ${data.expected_key || value}.`
+          : 'Chave esperada limpa.', 'ok');
+      } catch (err) {
+        updateCaptureStatus(`Falha ao salvar a chave esperada: ${err.message}`, 'danger');
+      }
+    }
+
+    async function fetchLatestCapture(manual = false) {
+      try {
+        const response = await fetch('/api/capture/latest', { headers: { 'Accept': 'application/json' } });
+        const data = await response.json();
+        if (!data.ok || !data.has_capture) {
+          updateCaptureDebug({
+            expected_key: data.expected_key || '',
+          });
+          if (manual) updateCaptureStatus('Ainda não há captura do Tampermonkey.', '');
+          return;
+        }
+        const captures = [
+          data.manifest_capture ? {
+            ...data.manifest_capture,
+            capture_type: 'manifest',
+            expected_key: data.expected_key || '',
+          } : null,
+          data.details_capture ? {
+            ...data.details_capture,
+            capture_type: 'details',
+            expected_key: data.expected_key || '',
+          } : null,
+          (!data.manifest_capture && !data.details_capture && data.payload) ? {
+            capture_id: data.capture_id,
+            received_at: data.received_at,
+            source_url: data.source_url || '',
+            capture_type: data.capture_type || 'generic',
+            capture_session: data.capture_session || '',
+            capture_key: data.capture_key || '',
+            expected_key: data.expected_key || '',
+            payload: data.payload,
+            payload_text: data.payload_text || '',
+          } : null,
+        ].filter(Boolean);
+
+        let appliedAny = false;
+        for (const capture of captures) {
+          const captureId = String(capture.capture_id || '');
+          const targetType = capture.capture_type === 'details' ? 'details' : 'manifest';
+          const lastSeenId = targetType === 'details' ? lastDetailsCaptureId : lastManifestCaptureId;
+          if (!captureId || captureId === lastSeenId) {
+            continue;
+          }
+          updateCaptureDebug(capture);
+          appliedAny = applyCapturedPayloadToField(
+            capture,
+            targetType,
+            true
+          ) || appliedAny;
+          if (targetType === 'details') {
+            lastDetailsCaptureId = captureId;
+            localStorage.setItem('last_details_capture_id', captureId);
+          } else {
+            lastManifestCaptureId = captureId;
+            localStorage.setItem('last_manifest_capture_id', captureId);
+          }
+        }
+        if (appliedAny) {
+          return;
+        }
+        if (manual) {
+          updateCaptureStatus('Nenhuma captura nova encontrada.', '');
+        }
+      } catch (err) {
+        if (manual) {
+          updateCaptureStatus(`Falha ao buscar captura: ${err.message}`, 'danger');
+        }
+      }
+    }
+
+    function refreshMainJsonStatus() {
+      if (!sourceChips) return;
+      const raw = jsonEl.value.trim();
+      if (!raw) {
+        setChipContainer(sourceChips, [{ label: 'aguardando JSON principal', tone: '' }]);
+        return;
+      }
+
+      try {
+        JSON.parse(raw);
+        setChipContainer(sourceChips, [{ label: 'JSON principal válido', tone: 'ok' }]);
+      } catch (err) {
+        setChipContainer(sourceChips, [{ label: 'JSON principal inválido', tone: 'danger' }]);
+      }
+    }
+
+    function refreshDetailsView() {
+      const detailsRaw = detailsEl.value.trim();
+      if (detailsRaw) {
+        try {
+          const detailsParsed = JSON.parse(detailsRaw);
+          const detailsResp = unwrapResponse(detailsParsed);
+          lastDetailsMeta = extractDetailsMetadata(detailsResp);
+          fillMetadataFromDetails(lastDetailsMeta, false);
+
+          const tagItems = [];
+          if (lastDetailsMeta.series_title) tagItems.push({ label: 'series', tone: 'ok' });
+          if (lastDetailsMeta.episode_title) tagItems.push({ label: 'title', tone: 'ok' });
+          if (lastDetailsMeta.season_number !== null) tagItems.push({ label: 'season_number', tone: 'ok' });
+          if (lastDetailsMeta.episode_number !== null) tagItems.push({ label: 'episode_id', tone: 'ok' });
+          if (lastDetailsMeta.program_id) tagItems.push({ label: 'program_id', tone: 'warn' });
+          if (lastDetailsMeta.series_id) tagItems.push({ label: 'series_id', tone: 'warn' });
+          if (lastDetailsMeta.show_type) tagItems.push({ label: `show_type:${lastDetailsMeta.show_type}`, tone: 'warn' });
+          if (metadataChips) {
+            setChipContainer(metadataChips, tagItems.length ? tagItems : [{ label: 'sem metadados detectados', tone: 'warn' }]);
+          }
+        } catch (err) {
+          lastDetailsMeta = null;
+          if (metadataChips) {
+            setChipContainer(metadataChips, [{ label: 'JSON detalhes inválido', tone: 'danger' }]);
+          }
+        }
+      } else {
+        lastDetailsMeta = null;
+        if (metadataChips) {
+          setChipContainer(metadataChips, [{ label: 'cole o JSON de detalhes', tone: 'warn' }]);
+        }
+      }
+
+      updatePreview();
+      saveLS();
+    }
+
+    function refreshMetaView() {
+      refreshMainJsonStatus();
+      refreshDetailsView();
+      if (!jsonEl.value.trim() && !detailsEl.value.trim()) {
+        previewEl.textContent = 'Preencha o JSON para gerar o nome automaticamente.';
+      }
+      updatePreview();
+    }
+
+    function clearFormAfterSuccess() {
+      resetFormState('Pronto para o próximo download.');
+    }
+
+    function clearDownloadJobPoll() {
+      if (downloadJobPollTimer) {
+        clearTimeout(downloadJobPollTimer);
+        downloadJobPollTimer = null;
+      }
+    }
+
+    function setDownloadProgress(job) {
+      if (!job || !job.progress) {
+        if (downloadProgressFill) downloadProgressFill.style.width = '0%';
+        if (downloadProgressLabel) downloadProgressLabel.textContent = 'Sem job ativo.';
+        if (downloadProgressPercent) downloadProgressPercent.textContent = '0%';
+        return;
+      }
+
+      const progress = job.progress || {};
+      const percent = Number.isFinite(progress.percent) ? Math.max(0, Math.min(100, progress.percent)) : null;
+      const labelParts = [];
+
+      if (job.status === 'queued') {
+        labelParts.push('Na fila');
+      } else if (job.status === 'running') {
+        labelParts.push('Em andamento');
+      } else if (job.status === 'done') {
+        labelParts.push('Concluído');
+      } else if (job.status === 'error') {
+        labelParts.push('Erro');
+      }
+
+      if (progress.text) {
+        labelParts.push(progress.text);
+      }
+      if (progress.speed) {
+        labelParts.push(`velocidade ${progress.speed}`);
+      }
+      if (progress.frame) {
+        labelParts.push(`frame ${progress.frame}`);
+      }
+
+      if (downloadProgressFill) {
+        downloadProgressFill.style.width = `${percent !== null ? percent : (job.status === 'done' ? 100 : 0)}%`;
+      }
+      if (downloadProgressLabel) {
+        downloadProgressLabel.textContent = labelParts.length ? labelParts.join(' • ') : 'Aguardando progresso...';
+      }
+      if (downloadProgressPercent) {
+        downloadProgressPercent.textContent = `${percent !== null ? percent.toFixed(1).replace(/\.0$/, '') : (job.status === 'done' ? '100' : '0')}%`;
+      }
+    }
+
+    async function fetchDownloadJobStatus(jobId) {
+      const response = await fetch(`/api/download-jobs/${jobId}`, { headers: { 'Accept': 'application/json' } });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) {
+        const error = new Error((data && data.error) || `HTTP ${response.status}`);
+        error.status = response.status;
+        throw error;
+      }
+      return data.job || {};
+    }
+
+    async function waitForDownloadJob(jobId) {
+      clearDownloadJobPoll();
+
+      return new Promise((resolve, reject) => {
+        const tick = async () => {
+          try {
+            const job = await fetchDownloadJobStatus(jobId);
+            missingJobRetries = 0;
+            setDownloadProgress(job);
+            if (job.status === 'queued') {
+              if (statusLine) statusLine.textContent = 'Na fila de download. Aguardando a vez...';
+            } else if (job.status === 'running') {
+              const progress = job.progress || {};
+              const percent = Number.isFinite(progress.percent) ? progress.percent : null;
+              const text = progress.text ? ` ${progress.text}` : '';
+              const percentText = percent !== null ? ` ${percent.toFixed(1).replace(/\.0$/, '')}%` : '';
+              if (statusLine) statusLine.textContent = `Download em andamento...${percentText}${text}`;
+            } else if (job.status === 'done') {
+              const result = job.result || {};
+              if (statusLine) statusLine.textContent = result.path ? `Salvo em: ${result.path}` : 'Download concluído.';
+              clearDownloadJobPoll();
+              resolve(job);
+              return;
+            } else if (job.status === 'error') {
+              clearDownloadJobPoll();
+              reject(new Error(job.error || 'Falha ao salvar o arquivo.'));
+              return;
+            } else {
+              if (statusLine) statusLine.textContent = 'Aguardando status do download...';
+            }
+            downloadJobPollTimer = setTimeout(tick, 1500);
+          } catch (err) {
+            if (err && err.status === 404 && missingJobRetries < 3) {
+              missingJobRetries += 1;
+              downloadJobPollTimer = setTimeout(tick, 1000);
+              return;
+            }
+            clearDownloadJobPoll();
+            reject(err);
+          }
+        };
+        let missingJobRetries = 0;
+        tick();
+      });
+    }
+
+    FIELD_IDS.forEach((id) => {
+      const el = getField(id);
+      if (!el) return;
+      el.addEventListener('input', () => {
+        el.dataset.manual = '1';
+        updatePreview();
+        saveLS();
+      });
+      el.addEventListener('change', () => {
+        updatePreview();
+        saveLS();
+      });
     });
 
-    // Fallback: when window regains focus (after browser save dialog), hide spinner
-    window.addEventListener('focus', ()=>{
-      setTimeout(()=>{ overlay.style.display='none'; submitBtn.disabled = false; }, 300);
+    jsonEl.addEventListener('input', refreshMetaView);
+    jsonEl.addEventListener('change', refreshMetaView);
+    detailsEl.addEventListener('input', () => {
+      clearTimeout(detailsRefreshTimer);
+      detailsRefreshTimer = setTimeout(refreshMetaView, 250);
+    });
+    detailsEl.addEventListener('change', refreshMetaView);
+
+    document.querySelectorAll('input[name="audio_mode"], input[name="subs_mode"], #force_aac')
+      .forEach((el) => el.addEventListener('change', saveLS));
+
+    categoryEl.addEventListener('change', () => {
+      updatePreview();
+      saveLS();
+    });
+
+    document.getElementById('container').addEventListener('change', () => {
+      updatePreview();
+      saveLS();
+    });
+
+    if (fillFromJsonBtn) {
+      fillFromJsonBtn.addEventListener('click', () => {
+        if (!lastDetailsMeta) {
+          refreshDetailsView();
+        }
+        if (lastDetailsMeta) {
+          fillMetadataFromDetails(lastDetailsMeta, true);
+        }
+      });
+    }
+    if (pullCaptureBtn) {
+      pullCaptureBtn.addEventListener('click', () => fetchLatestCapture(true));
+    }
+    if (downloadScriptBtn) {
+      downloadScriptBtn.addEventListener('click', () => {
+        window.location.href = `/tampermonkey_capture.user.js?ts=${Date.now()}`;
+      });
+    }
+    if (setExpectedKeyBtn) {
+      setExpectedKeyBtn.addEventListener('click', () => saveExpectedCaptureKey());
+    }
+    if (captureExpectedKey) {
+      captureExpectedKey.addEventListener('change', () => {
+        localStorage.setItem('capture_expected_key', captureExpectedKey.value.trim());
+      });
+    }
+    if (clearManualBtn) {
+      clearManualBtn.addEventListener('click', () => {
+        ['series_title', 'season_number', 'episode_number', 'episode_title'].forEach((id) => {
+          const el = getField(id);
+          if (el) {
+            el.value = '';
+            el.dataset.manual = '0';
+          }
+        });
+        updatePreview();
+        saveLS();
+      });
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      submitBtn.disabled = true;
+      if (statusLine) statusLine.textContent = '';
+      setDownloadProgress(null);
+      if (!outputEl.value.trim()) {
+        outputEl.value = buildNameFromFields();
+      }
+      saveLS();
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          body: new FormData(form),
+          headers: { 'Accept': 'application/json' },
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload || !payload.ok) {
+          const message = (payload && (payload.error || payload.message)) || `HTTP ${response.status}`;
+          throw new Error(message);
+        }
+        if (payload.queued && payload.job_id) {
+          const queued = payload.queued_count ?? payload.queue_size ?? 0;
+          const running = payload.running_count ?? 0;
+          const total = payload.total_jobs ?? (queued + running);
+          if (statusLine) statusLine.textContent = `Enfileirado. Na fila: ${queued}. Rodando: ${running}. Total: ${total}.`;
+          await waitForDownloadJob(payload.job_id);
+          clearFormAfterSuccess();
+        } else {
+          if (statusLine) statusLine.textContent = payload.path ? `Salvo em: ${payload.path}` : 'Download concluído.';
+          clearFormAfterSuccess();
+        }
+      } catch (err) {
+        if (statusLine) statusLine.textContent = `Erro: ${err.message}`;
+        alert(`Falha ao salvar no servidor:\n${err.message}`);
+      } finally {
+        clearDownloadJobPoll();
+        submitBtn.disabled = false;
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadLS();
+      syncCategoryUi();
+      resetFormState('', true);
+      refreshMetaView();
+      if (captureStatus) {
+        updateCaptureStatus('Aguardando o userscript enviar um JSON.');
+      }
+      updateCaptureDebug(null);
+      fetchLatestCapture(false);
+      capturePollTimer = setInterval(() => {
+        if (!document.hidden) fetchLatestCapture(false);
+      }, 2000);
+      updatePreview();
     });
   </script>
 </body>
