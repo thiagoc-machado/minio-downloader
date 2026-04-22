@@ -39,6 +39,7 @@ CAPTURE_STATE_FILE = LOGS_DIR / 'capture_state.json'
 MEDIA_ROOT_SERIES = Path(os.getenv('MEDIA_ROOT_SERIES', os.getenv('MEDIA_ROOT', '/media/series')))
 MEDIA_ROOT_MOVIES = Path(os.getenv('MEDIA_ROOT_MOVIES', os.getenv('MEDIA_ROOT', '/media/movies')))
 MEDIA_ROOT_CRISTAO = Path(os.getenv('MEDIA_ROOT_CRISTAO', os.getenv('MEDIA_ROOT', '/media/cristaos')))
+MEDIA_ROOT_AUDIOLIVROS_INFANTIL = Path(os.getenv('MEDIA_ROOT_AUDIOLIVROS_INFANTIL', os.getenv('MEDIA_ROOT', '/media/AudioLivros_infantil')))
 SAVE_TO_LIBRARY = os.getenv('SAVE_TO_LIBRARY', '1') != '0'
 # Keep capture persistence only; download should happen explicitly from the UI button.
 AUTO_DOWNLOAD_ON_CAPTURE = False
@@ -430,6 +431,8 @@ def resolve_media_root(category: str) -> Path:
         return MEDIA_ROOT_MOVIES
     if category == 'christao':
         return MEDIA_ROOT_CRISTAO
+    if category in ('audiolivros_infantil', 'audio_livros_infantil', 'audiolivros', 'audio_livros'):
+        return MEDIA_ROOT_AUDIOLIVROS_INFANTIL
     return MEDIA_ROOT_SERIES
 
 def build_library_output_path(resp: dict, overrides: dict, final_name: str, category: str) -> Path:
@@ -548,6 +551,59 @@ def db_upsert_job(job: dict) -> None:
             payload,
         )
         conn.commit()
+
+def db_delete_job(job_id: str) -> bool:
+    """Delete a job from SQLite and memory when it is no longer active."""
+    if not job_id:
+        return False
+    ensure_download_jobs_db()
+    with sqlite3.connect(DOWNLOAD_DB_FILE) as conn:
+        cur = conn.execute('DELETE FROM download_jobs WHERE job_id = ?', (job_id,))
+        conn.commit()
+    with DOWNLOAD_JOBS_LOCK:
+        DOWNLOAD_JOBS.pop(job_id, None)
+    return cur.rowcount > 0
+
+def claim_next_download_job() -> Optional[dict]:
+    """Atomically claim the oldest queued job while ensuring only one job runs globally."""
+    ensure_download_jobs_db()
+    with sqlite3.connect(DOWNLOAD_DB_FILE, timeout=30) as conn:
+        conn.row_factory = sqlite3.Row
+        conn.execute('PRAGMA journal_mode=WAL')
+        conn.execute('PRAGMA busy_timeout=30000')
+        conn.execute('BEGIN IMMEDIATE')
+
+        running = conn.execute(
+            "SELECT job_id FROM download_jobs WHERE status = 'running' ORDER BY started_at ASC LIMIT 1"
+        ).fetchone()
+        if running:
+            conn.commit()
+            return None
+
+        row = conn.execute(
+            "SELECT * FROM download_jobs WHERE status = 'queued' ORDER BY created_at ASC LIMIT 1"
+        ).fetchone()
+        if not row:
+            conn.commit()
+            return None
+
+        now = time.time()
+        job_id = row['job_id']
+        conn.execute(
+            "UPDATE download_jobs SET status = 'running', started_at = ?, error = NULL WHERE job_id = ?",
+            (now, job_id),
+        )
+        conn.commit()
+
+    job = db_row_to_job(row)
+    if not job:
+        return None
+    job['status'] = 'running'
+    job['started_at'] = now
+    job['error'] = None
+    with DOWNLOAD_JOBS_LOCK:
+        DOWNLOAD_JOBS[job_id] = job
+    return job
 
 def load_capture_state() -> dict:
     """Load the persisted capture state."""
@@ -692,9 +748,9 @@ def trigger_download_from_capture(json_input: str, details_json: str = ''):
         'cookie': '',
         'extra_headers': '',
         'force_aac': '',
-        'audio_mode': 'prefer',
+        'audio_mode': 'all',
         'audio_pref': '',
-        'subs_mode': 'none',
+        'subs_mode': 'all',
         'subs_pref': '',
     }
     with app.test_request_context('/download', method='POST', data=form_data):
@@ -795,7 +851,7 @@ def perform_download(form_data: dict, job_id: str = '') -> dict:
     # naming & container
     output_name   = (form.get('output', '') or '').strip()  # blank => auto
     category      = (form.get('category', 'series') or 'series').strip().lower()
-    if category not in ('series', 'movies', 'christao'):
+    if category not in ('series', 'movies', 'christao', 'audiolivros_infantil'):
         category = 'series'
     container     = (form.get('container', 'mp4') or 'mp4').lower()
     if container not in ('mp4', 'mkv'):
@@ -814,9 +870,9 @@ def perform_download(form_data: dict, job_id: str = '') -> dict:
     force_aac = form.get('force_aac') == 'on'
 
     # language modes
-    audio_mode = form.get('audio_mode', 'prefer')  # default|prefer|all
+    audio_mode = form.get('audio_mode', 'all')  # default|prefer|all
     audio_pref = form.get('audio_pref', '').strip().lower()
-    subs_mode  = form.get('subs_mode', 'none')     # none|prefer|all
+    subs_mode  = form.get('subs_mode', 'all')     # none|prefer|all
     subs_pref  = form.get('subs_pref', '').strip().lower()
 
     # build header lines
@@ -1085,41 +1141,33 @@ def create_download_job(form_data: dict) -> dict:
     with DOWNLOAD_JOBS_LOCK:
         DOWNLOAD_JOBS[job_id] = job
         db_upsert_job(job)
-    DOWNLOAD_QUEUE.put(job_id)
     return job
 
 def download_worker_loop() -> None:
     """Process queued downloads sequentially."""
     while True:
-        job_id = DOWNLOAD_QUEUE.get()
+        job = claim_next_download_job()
+        if not job:
+            time.sleep(1.0)
+            continue
+        job_id = job['job_id']
         try:
+            result = perform_download(job['form_data'], job_id=job_id)
             with DOWNLOAD_JOBS_LOCK:
-                job = DOWNLOAD_JOBS.get(job_id)
-                if not job:
-                    continue
-                job['status'] = 'running'
-                job['started_at'] = time.time()
-                job['error'] = None
-                db_upsert_job(job)
-            try:
-                result = perform_download(job['form_data'], job_id=job_id)
-                with DOWNLOAD_JOBS_LOCK:
-                    job = DOWNLOAD_JOBS.get(job_id)
-                    if job:
-                        job['status'] = 'done'
-                        job['finished_at'] = time.time()
-                        job['result'] = result
-                        db_upsert_job(job)
-            except Exception as e:
-                with DOWNLOAD_JOBS_LOCK:
-                    job = DOWNLOAD_JOBS.get(job_id)
-                    if job:
-                        job['status'] = 'error'
-                        job['finished_at'] = time.time()
-                        job['error'] = str(e)
-                        db_upsert_job(job)
-        finally:
-            DOWNLOAD_QUEUE.task_done()
+                current = DOWNLOAD_JOBS.get(job_id)
+                if current:
+                    current['status'] = 'done'
+                    current['finished_at'] = time.time()
+                    current['result'] = result
+                    db_upsert_job(current)
+        except Exception as e:
+            with DOWNLOAD_JOBS_LOCK:
+                current = DOWNLOAD_JOBS.get(job_id)
+                if current:
+                    current['status'] = 'error'
+                    current['finished_at'] = time.time()
+                    current['error'] = str(e)
+                    db_upsert_job(current)
 
 def serialize_download_job(job: dict) -> dict:
     """Return a compact public view of a queued job."""
@@ -1133,10 +1181,10 @@ def serialize_download_job(job: dict) -> dict:
         'created_at': current.get('created_at'),
         'started_at': current.get('started_at'),
         'finished_at': current.get('finished_at'),
+        'form_data': current.get('form_data') or {},
         'progress': current.get('progress') or {},
         'result': current.get('result'),
         'error': current.get('error'),
-        'queue_size': DOWNLOAD_QUEUE.qsize(),
     }
 
 def count_download_jobs() -> dict:
@@ -1380,6 +1428,7 @@ def download_job_status(job_id: str):
             'created_at': snapshot.get('created_at'),
             'started_at': snapshot.get('started_at'),
             'finished_at': snapshot.get('finished_at'),
+            'form_data': snapshot.get('form_data') or {},
             'progress': snapshot.get('progress') or {},
             'result': snapshot.get('result'),
             'error': snapshot.get('error'),
@@ -1407,6 +1456,32 @@ def download_jobs_list():
     return jsonify({
         'ok': True,
         'jobs': jobs,
+        'queue_size': counts['active_or_pending'],
+        'queued_count': counts['queued'],
+        'running_count': counts['running'],
+        'total_jobs': counts['total'],
+    }), 200
+
+@app.delete('/api/download-jobs/<job_id>')
+def delete_download_job(job_id: str):
+    with DOWNLOAD_JOBS_LOCK:
+        job = DOWNLOAD_JOBS.get(job_id)
+        if job and job.get('status') == 'running':
+            return jsonify({'ok': False, 'error': 'job_running'}), 409
+        if job and job.get('status') not in ('queued', 'done', 'error'):
+            return jsonify({'ok': False, 'error': 'job_not_removable'}), 409
+    if not job:
+        job = db_get_job(job_id)
+        if job and job.get('status') == 'running':
+            return jsonify({'ok': False, 'error': 'job_running'}), 409
+        if job and job.get('status') not in ('queued', 'done', 'error'):
+            return jsonify({'ok': False, 'error': 'job_not_removable'}), 409
+    if not db_delete_job(job_id):
+        return jsonify({'ok': False, 'error': 'job_not_found'}), 404
+    counts = count_download_jobs()
+    return jsonify({
+        'ok': True,
+        'deleted': True,
         'queue_size': counts['active_or_pending'],
         'queued_count': counts['queued'],
         'running_count': counts['running'],

@@ -498,6 +498,180 @@
       line-height: 1.35;
     }
 
+    .queue-card {
+      margin-top: 18px;
+    }
+
+    .queue-summary {
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(77, 212, 255, 0.2);
+      background: rgba(77, 212, 255, 0.08);
+      color: #c6f3ff;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .queue-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .queue-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .queue-empty {
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px dashed rgba(148, 163, 184, 0.22);
+      background: rgba(255,255,255,0.03);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .queue-item {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .queue-item.is-running {
+      border-color: rgba(33, 199, 141, 0.34);
+      background: rgba(33, 199, 141, 0.08);
+    }
+
+    .queue-item.is-queued {
+      border-color: rgba(77, 212, 255, 0.22);
+    }
+
+    .queue-item.is-done {
+      border-color: rgba(33, 199, 141, 0.22);
+      opacity: 0.95;
+    }
+
+    .queue-item.is-error {
+      border-color: rgba(251, 113, 133, 0.26);
+      background: rgba(251, 113, 133, 0.06);
+    }
+
+    .queue-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 10px;
+    }
+
+    .queue-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #eff7ff;
+      word-break: break-word;
+    }
+
+    .queue-badge {
+      flex: 0 0 auto;
+      padding: 6px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(255,255,255,0.05);
+      color: #d6e8ff;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .queue-badge.is-running {
+      border-color: rgba(33, 199, 141, 0.4);
+      background: rgba(33, 199, 141, 0.14);
+      color: #bff9e2;
+    }
+
+    .queue-badge.is-queued {
+      border-color: rgba(77, 212, 255, 0.32);
+      background: rgba(77, 212, 255, 0.12);
+      color: #c6f3ff;
+    }
+
+    .queue-badge.is-done {
+      border-color: rgba(33, 199, 141, 0.28);
+      background: rgba(33, 199, 141, 0.1);
+      color: #bff9e2;
+    }
+
+    .queue-badge.is-error {
+      border-color: rgba(251, 113, 133, 0.34);
+      background: rgba(251, 113, 133, 0.12);
+      color: #ffd0d8;
+    }
+
+    .queue-meta {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .queue-progress {
+      display: grid;
+      gap: 6px;
+    }
+
+    .queue-progress-track {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.16);
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .queue-progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 160ms ease;
+    }
+
+    .queue-item-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .queue-action {
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .queue-action.is-danger {
+      color: #ffd0d8;
+      border: 1px solid rgba(251, 113, 133, 0.26);
+      background: rgba(251, 113, 133, 0.08);
+    }
+
+    .queue-action.is-muted {
+      color: #d6e8ff;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(255,255,255,0.05);
+    }
+
     @keyframes lift {
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
@@ -632,6 +806,7 @@
                   <option value="series" selected>Séries</option>
                   <option value="movies">Filmes</option>
                   <option value="christao">Cristãos</option>
+                  <option value="audiolivros_infantil">AudioLivros infantil</option>
                 </select>
               </div>
             </div>
@@ -660,6 +835,25 @@
           <button type="submit" id="submitBtn" class="primary">Baixar</button>
         </div>
       </div>
+
+      <section class="card queue-card">
+        <div class="card-body stack">
+          <div class="section-title">
+            <div>
+              <h3>Fila de downloads</h3>
+              <p>Os jobs entram aqui e o backend processa um por vez.</p>
+            </div>
+            <div class="queue-actions">
+              <button type="button" id="toggleQueueViewBtn" class="secondary subtle">Mostrar antigos</button>
+              <button type="button" id="clearFinishedBtn" class="secondary subtle">Limpar concluídos</button>
+              <div class="queue-summary" id="queueSummary">Sem jobs ativos.</div>
+            </div>
+          </div>
+          <div class="queue-list" id="downloadQueueList">
+            <div class="queue-empty">Sem jobs na fila.</div>
+          </div>
+        </div>
+      </section>
     </form>
   </div>
 
@@ -670,6 +864,10 @@
     const downloadProgressFill = document.getElementById('downloadProgressFill');
     const downloadProgressLabel = document.getElementById('downloadProgressLabel');
     const downloadProgressPercent = document.getElementById('downloadProgressPercent');
+    const queueSummary = document.getElementById('queueSummary');
+    const downloadQueueList = document.getElementById('downloadQueueList');
+    const toggleQueueViewBtn = document.getElementById('toggleQueueViewBtn');
+    const clearFinishedBtn = document.getElementById('clearFinishedBtn');
     const outputEl = document.getElementById('output');
     const previewEl = document.getElementById('namePreview');
     const jsonEl = document.getElementById('json_input');
@@ -707,6 +905,8 @@
     let detailsRefreshTimer = null;
     let capturePollTimer = null;
     let downloadJobPollTimer = null;
+    let downloadQueuePollTimer = null;
+    let queueShowAll = localStorage.getItem('queue_show_all') === '1';
 
     const LS_KEYS = [...FIELD_IDS, 'json_input', 'details_json', 'force_aac', 'audio_mode', 'subs_mode', 'capture_expected_key'];
 
@@ -720,8 +920,8 @@
           localStorage.setItem(key, el.value || '');
         }
       });
-      const audioMode = (new FormData(form).get('audio_mode') || 'prefer');
-      const subsMode = (new FormData(form).get('subs_mode') || 'none');
+      const audioMode = (new FormData(form).get('audio_mode') || 'all');
+      const subsMode = (new FormData(form).get('subs_mode') || 'all');
       localStorage.setItem('audio_mode', audioMode);
       localStorage.setItem('subs_mode', subsMode);
       if (captureExpectedKey) {
@@ -778,8 +978,8 @@
       if (forceAac) {
         forceAac.checked = false;
       }
-      const audioDefault = document.querySelector('input[name="audio_mode"][value="prefer"]');
-      const subsDefault = document.querySelector('input[name="subs_mode"][value="none"]');
+      const audioDefault = document.querySelector('input[name="audio_mode"][value="all"]');
+      const subsDefault = document.querySelector('input[name="subs_mode"][value="all"]');
       if (audioDefault) audioDefault.checked = true;
       if (subsDefault) subsDefault.checked = true;
 
@@ -794,8 +994,8 @@
         LS_KEYS.filter((key) => key !== 'capture_expected_key').forEach((key) => localStorage.removeItem(key));
         localStorage.setItem('category', 'series');
         localStorage.setItem('container', 'mp4');
-        localStorage.setItem('audio_mode', 'prefer');
-        localStorage.setItem('subs_mode', 'none');
+        localStorage.setItem('audio_mode', 'all');
+        localStorage.setItem('subs_mode', 'all');
         if (preservedCaptureExpectedKey) {
           localStorage.setItem('capture_expected_key', preservedCaptureExpectedKey);
         }
@@ -914,6 +1114,7 @@
         series: '/media/series',
         movies: '/media/movies',
         christao: '/media/cristaos',
+        audiolivros_infantil: '/media/AudioLivros_infantil',
       };
       const root = roots[category] || roots.series;
       const series = sanitize(document.getElementById('series_title').value.trim() || lastDetailsMeta?.series_title || '') || 'video';
@@ -1276,6 +1477,13 @@
       }
     }
 
+    function clearDownloadQueuePoll() {
+      if (downloadQueuePollTimer) {
+        clearTimeout(downloadQueuePollTimer);
+        downloadQueuePollTimer = null;
+      }
+    }
+
     function setDownloadProgress(job) {
       if (!job || !job.progress) {
         if (downloadProgressFill) downloadProgressFill.style.width = '0%';
@@ -1316,6 +1524,195 @@
       }
       if (downloadProgressPercent) {
         downloadProgressPercent.textContent = `${percent !== null ? percent.toFixed(1).replace(/\.0$/, '') : (job.status === 'done' ? '100' : '0')}%`;
+      }
+    }
+
+    function getJobDisplayName(job) {
+      const formData = job?.form_data || {};
+      return (
+        (typeof formData.output === 'string' && formData.output.trim()) ||
+        (typeof formData.series_title === 'string' && formData.series_title.trim()) ||
+        (typeof formData.episode_title === 'string' && formData.episode_title.trim()) ||
+        'Sem título'
+      );
+    }
+
+    function getCategoryLabel(category) {
+      const value = String(category || '').toLowerCase();
+      return ({
+        series: 'Séries',
+        movies: 'Filmes',
+        christao: 'Cristãos',
+        audiolivros_infantil: 'AudioLivros infantil',
+      })[value] || value || 'sem categoria';
+    }
+
+    function formatJobTime(ts) {
+      if (!Number.isFinite(ts)) return '';
+      return new Date(ts * 1000).toLocaleString();
+    }
+
+    function isRemovableJob(job) {
+      return Boolean(job && job.status && job.status !== 'running');
+    }
+
+    function renderDownloadQueue(data) {
+      const jobs = Array.isArray(data?.jobs) ? [...data.jobs] : [];
+      const counts = {
+        queued: Number.isFinite(data?.queued_count) ? data.queued_count : jobs.filter((job) => job.status === 'queued').length,
+        running: Number.isFinite(data?.running_count) ? data.running_count : jobs.filter((job) => job.status === 'running').length,
+        total: Number.isFinite(data?.total_jobs) ? data.total_jobs : jobs.length,
+      };
+
+      if (queueSummary) {
+        queueSummary.textContent = `${counts.queued} na fila • ${counts.running} rodando • ${counts.total} total`;
+      }
+
+      if (toggleQueueViewBtn) {
+        toggleQueueViewBtn.textContent = queueShowAll ? 'Ocultar antigos' : 'Mostrar antigos';
+      }
+
+      if (!downloadQueueList) return;
+      if (!jobs.length) {
+        downloadQueueList.innerHTML = '<div class="queue-empty">Sem jobs na fila.</div>';
+        return;
+      }
+
+      const statusOrder = { running: 0, queued: 1, error: 2, done: 3 };
+      jobs.sort((a, b) => {
+        const left = statusOrder[a.status] ?? 9;
+        const right = statusOrder[b.status] ?? 9;
+        if (left !== right) return left - right;
+        return (b.created_at || 0) - (a.created_at || 0);
+      });
+
+      const activeJobs = jobs.filter((job) => job.status === 'queued' || job.status === 'running');
+      const finishedJobs = jobs.filter((job) => job.status === 'done' || job.status === 'error');
+      const visibleJobs = queueShowAll ? jobs : [...activeJobs, ...finishedJobs.slice(0, 5)];
+
+      downloadQueueList.innerHTML = '';
+      visibleJobs.slice(0, 12).forEach((job) => {
+        const item = document.createElement('article');
+        item.className = `queue-item is-${job.status || 'queued'}`;
+
+        const title = document.createElement('div');
+        title.className = 'queue-title';
+        title.textContent = getJobDisplayName(job);
+
+        const badge = document.createElement('div');
+        badge.className = `queue-badge is-${job.status || 'queued'}`;
+        badge.textContent = job.status || 'queued';
+
+        const top = document.createElement('div');
+        top.className = 'queue-top';
+        top.appendChild(title);
+        top.appendChild(badge);
+
+        const meta = document.createElement('div');
+        meta.className = 'queue-meta';
+        const lines = [];
+        const category = getCategoryLabel(job?.form_data?.category);
+        lines.push(`${category} • criado em ${formatJobTime(job.created_at) || 'agora'}`);
+        if (job.status === 'running' && job.progress && job.progress.text) {
+          lines.push(job.progress.text);
+        }
+        if (job.status === 'done' && job.result && job.result.path) {
+          lines.push(`Salvo em: ${job.result.path}`);
+        }
+        if (job.status === 'error' && job.error) {
+          lines.push(`Erro: ${job.error}`);
+        }
+        lines.forEach((line) => {
+          const div = document.createElement('div');
+          div.textContent = line;
+          meta.appendChild(div);
+        });
+
+        const progressWrap = document.createElement('div');
+        progressWrap.className = 'queue-progress';
+        const progressTrack = document.createElement('div');
+        progressTrack.className = 'queue-progress-track';
+        const progressFill = document.createElement('div');
+        progressFill.className = 'queue-progress-fill';
+        const percent = Number.isFinite(job?.progress?.percent) ? Math.max(0, Math.min(100, job.progress.percent)) : (job.status === 'done' ? 100 : 0);
+        progressFill.style.width = `${percent}%`;
+        progressTrack.appendChild(progressFill);
+        progressWrap.appendChild(progressTrack);
+
+        const actions = document.createElement('div');
+        actions.className = 'queue-item-actions';
+        if (isRemovableJob(job)) {
+          const removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.className = 'queue-action is-danger';
+          removeBtn.textContent = job.status === 'queued' ? 'Remover da fila' : 'Excluir';
+          removeBtn.addEventListener('click', () => {
+            deleteJob(job.job_id).catch((err) => {
+              if (statusLine) statusLine.textContent = `Erro: ${err.message}`;
+            });
+          });
+          actions.appendChild(removeBtn);
+        } else {
+          const runningLabel = document.createElement('div');
+          runningLabel.className = 'queue-action is-muted';
+          runningLabel.textContent = 'Em execução';
+          actions.appendChild(runningLabel);
+        }
+
+        item.appendChild(top);
+        item.appendChild(meta);
+        item.appendChild(progressWrap);
+        item.appendChild(actions);
+        downloadQueueList.appendChild(item);
+      });
+    }
+
+    async function deleteJob(jobId) {
+      if (!jobId) return;
+      const response = await fetch(`/api/download-jobs/${jobId}`, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json' },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) {
+        throw new Error((data && data.error) || `HTTP ${response.status}`);
+      }
+      await refreshDownloadQueue(true);
+    }
+
+    async function clearFinishedJobs() {
+      const response = await fetch('/api/download-jobs', { headers: { 'Accept': 'application/json' } });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) {
+        throw new Error((data && data.error) || `HTTP ${response.status}`);
+      }
+      const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+      const finished = jobs.filter((job) => job.status === 'done' || job.status === 'error');
+      for (const job of finished) {
+        try {
+          await deleteJob(job.job_id);
+        } catch (_) {}
+      }
+      await refreshDownloadQueue(true);
+    }
+
+    async function fetchDownloadQueue() {
+      const response = await fetch('/api/download-jobs', { headers: { 'Accept': 'application/json' } });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) {
+        throw new Error((data && data.error) || `HTTP ${response.status}`);
+      }
+      return data;
+    }
+
+    async function refreshDownloadQueue(silent = false) {
+      try {
+        const data = await fetchDownloadQueue();
+        renderDownloadQueue(data);
+      } catch (err) {
+        if (!silent && queueSummary) {
+          queueSummary.textContent = 'Falha ao carregar fila.';
+        }
       }
     }
 
@@ -1450,6 +1847,25 @@
         saveLS();
       });
     }
+    if (toggleQueueViewBtn) {
+      toggleQueueViewBtn.addEventListener('click', () => {
+        queueShowAll = !queueShowAll;
+        localStorage.setItem('queue_show_all', queueShowAll ? '1' : '0');
+        refreshDownloadQueue(true);
+      });
+    }
+    if (clearFinishedBtn) {
+      clearFinishedBtn.addEventListener('click', () => {
+        clearFinishedBtn.disabled = true;
+        clearFinishedJobs()
+          .catch((err) => {
+            if (statusLine) statusLine.textContent = `Erro: ${err.message}`;
+          })
+          .finally(() => {
+            clearFinishedBtn.disabled = false;
+          });
+      });
+    }
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -1475,12 +1891,11 @@
           const queued = payload.queued_count ?? payload.queue_size ?? 0;
           const running = payload.running_count ?? 0;
           const total = payload.total_jobs ?? (queued + running);
-          if (statusLine) statusLine.textContent = `Enfileirado. Na fila: ${queued}. Rodando: ${running}. Total: ${total}.`;
-          await waitForDownloadJob(payload.job_id);
-          clearFormAfterSuccess();
+          if (statusLine) statusLine.textContent = `Enfileirado. Na fila: ${queued}. Rodando: ${running}. Total: ${total}. Você pode adicionar o próximo item.`;
+          await refreshDownloadQueue(true);
         } else {
           if (statusLine) statusLine.textContent = payload.path ? `Salvo em: ${payload.path}` : 'Download concluído.';
-          clearFormAfterSuccess();
+          await refreshDownloadQueue(true);
         }
       } catch (err) {
         if (statusLine) statusLine.textContent = `Erro: ${err.message}`;
@@ -1496,6 +1911,7 @@
       syncCategoryUi();
       resetFormState('', true);
       refreshMetaView();
+      refreshDownloadQueue(true);
       if (captureStatus) {
         updateCaptureStatus('Aguardando o userscript enviar um JSON.');
       }
@@ -1503,6 +1919,9 @@
       fetchLatestCapture(false);
       capturePollTimer = setInterval(() => {
         if (!document.hidden) fetchLatestCapture(false);
+      }, 2000);
+      downloadQueuePollTimer = setInterval(() => {
+        if (!document.hidden) refreshDownloadQueue(true);
       }, 2000);
       updatePreview();
     });

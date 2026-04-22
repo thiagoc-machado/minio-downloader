@@ -72,10 +72,12 @@ Exemplo para o seu `docker-compose.yml`:
       - MEDIA_ROOT_SERIES=/media/series
       - MEDIA_ROOT_MOVIES=/media/movies
       - MEDIA_ROOT_CRISTAO=/media/cristaos
+      - MEDIA_ROOT_AUDIOLIVROS_INFANTIL=/media/AudioLivros_infantil
     volumes:
       - /mnt/storage/series:/media/series
       - /mnt/storage/movies:/media/movies
       - /mnt/storage/cristaos:/media/cristaos
+      - /mnt/storage/AudioLivros_infantil:/media/AudioLivros_infantil
       - /mnt/storage/minio-downloads/logs:/app/logs
     ports:
       - '8090:5000'
@@ -89,6 +91,7 @@ Na UI, escolha a categoria:
 * `Séries` -> `Nome/Season XX/arquivo.ext`
 * `Filmes` -> `Nome/arquivo.ext`
 * `Cristãos` -> `Nome/arquivo.ext`
+* `AudioLivros infantil` -> `Nome/arquivo.ext`
 
 Para séries, o download final fica em uma estrutura no estilo Sonarr:
 
@@ -98,6 +101,10 @@ Para `Filmes` e `Cristãos`, o arquivo fica direto na pasta do título:
 
 `/media/movies/Nome-do-filme/Nome-do-arquivo.ext`
 `/media/cristaos/Nome-da-obra/Nome-do-arquivo.ext`
+
+Para `AudioLivros infantil`, o arquivo fica direto na pasta do título:
+
+`/media/AudioLivros_infantil/Nome-da-obra/Nome-do-arquivo.ext`
 
 ### Executando
 
